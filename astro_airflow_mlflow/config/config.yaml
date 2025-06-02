@@ -1,0 +1,27 @@
+# Configuration file for the project
+
+# Configuration file for the project
+
+artifact_dir: artifacts
+
+data_ingestion:
+  root_dir: artifacts
+  ingestion_dir: artifacts/data_ingestion
+  dataset_location: dataset/WineQT.csv
+  ingestion_path: artifacts/data_ingestion/WineQT.csv
+
+data_validation:
+  root_dir: artifacts/data_validation
+  dataset_location: dataset/WineQT.csv
+  STATUS_FILE: artifacts/data_validation/status.yaml
+
+data_transformation:
+  root_dir: artifacts/data_transformation
+  dataset_location: dataset/WineQT.csv
+
+model_trainer:
+  root_dir: artifacts/model_trainer
+  model_dir: artifacts/model_trainer/models
+  train_dataset_path: artifacts/data_transformation/train.csv
+  test_dataset_path: artifacts/data_transformation/test.csv
+  model_name: model.joblib

@@ -1,0 +1,8 @@
+# Copied project files - do not commit
+src/
+Datasets/
+config/
+logs/
+params.yaml
+schema.yaml
+project_requirements.txt

@@ -1,0 +1,5 @@
+# Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages
+
+# EPL ML Pipeline specific dependencies - minimal for logging test
+ensure==1.0.4
+pyyaml==6.0.2
