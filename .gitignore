@@ -1,0 +1,64 @@
+# MLFlow Ignore
+
+# -----------------------
+# Python
+# -----------------------
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+*.pyo
+*.pyd
+*.pkl
+*.log
+*.sqlite
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+env/
+mlflow_env/
+*.env
+*.venv
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+mlflow.log
+
+# Logs and checkpoints
+checkpoints/
+runs/
+*.ckpt
+*.h5
+
+# Data
+data/
+*.csv
+*.tsv
+*.parquet
+*.json
+*.xlsx
+*.zip
+
+# DVC
+.dvc/
+.dvcignore
+
+# System
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Docker
+*.pid
+*.sock
+docker-compose.override.yml
