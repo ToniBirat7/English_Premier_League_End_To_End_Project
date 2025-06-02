@@ -1,6 +1,4 @@
 # config_entity.py file
-
-# config_entity.py file
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,6 +6,9 @@ from pathlib import Path
 class DataIngestionConfig:
     """Data Ingestion Configuration"""
     dataset_path: Path
+    root_dir: Path
+    ingestion_path: Path
+    ingestion_dir: Path
 
 @dataclass
 class DataValidationConfig:
@@ -42,3 +43,4 @@ class ModelTrainerConfig:
     train_data_path: Path
     test_data_path: Path
     target_column: str
+
