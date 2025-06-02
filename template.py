@@ -7,35 +7,7 @@ import os
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 list_of_files = [
-  ".github/workflows/.gitkeep",
-  f"src/__init__.py",
-  f"src/components/__init__.py",
-  f"src/components/data_ingestion.py",
-  f"src/components/data_validation.py",
-  f"src/components/data_transformation.py",
-  f"src/components/model_trainer.py",
-  f"src/components/model_evaluation.py",
-  f"src/components/model_pusher.py",
-  f"src/utils/__init__.py",
-  f"src/utils/common.py",
-  f"src/utils/logger.py",
-  f"src/config/__init__.py",
-  f"src/config/configuration.py",
-  f"src/pipeline/__init__.py",
-  f"src/entity/__init__.py",
-  f"src/entity/config_entity.py",
-  f"src/constants/__init__.py",
-  "config/config.yaml",
-  "params.yaml",
-  "schema.yaml",
-  "main.py",
-  "Dockerfile",
-  "setup.py",
-  "research/research.ipynb",
-  "templates/index.html",
-  "requirements.txt",
-  "README.md",
-  ".gitignore",
+  f"WebApp/__init__.py",
 ]
 
 for filepath in list_of_files:
