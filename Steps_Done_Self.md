@@ -1,5 +1,7 @@
 ## **Below are the steps that have been completed so far:**
 
+**Note:** Do not copy `.env` file while creating Docker image. It contains sensitive information. Rather use environment variables to pass sensitive information to the container. Or pass the `.env` file while running the container using `--env-file` option.
+
 - **Created MariaDB**
 
 ```bash
@@ -275,24 +277,34 @@ curl -sSL install.astronomer.io | sudo bash -s
 
 Then, create a new Astro project:
 
-```bash
+````bash
 astro dev init
 astro dev start
 astro dev stop
 astro dev logs
 
-```
-
-What we've done is set up a basic Astro project structure. You can now start adding your tasks and workflows to the `astro` directory.
-
-Then, we copied all the folders and files required for the project into the `astro` directory. This includes the `src`, `config`, `params.yaml`, `schema.yaml`, and other necessary files.
-
+```docker build -t your-dockerhub-username/your-image-name .
+docker push your-dockerhub-username/your-image-name
 **Note:** Now, we will need to give the path relative to the containers path i.e. for `logging` to save the `logs` we will need to give `logs_dirs=/usr/local/airflow/logs` in the sr.
 
 Also, we need to build the `astro` image without the `--no-cache` option to ensure that the latest changes are reflected in the image.
 
 ```bash
 
-```
+````
 
 ### **Now we will configure all the Entity, Configuration, and Pipeline files**
+
+### **Data Validation**
+
+But, before that have an idea about the Dataset. Visualize the data using `pandas` and `matplotlib` to understand the data better.
+
+Identify the final columns that you want to keep in the final dataset. This will help in data validation and transformation steps.
+
+```Python
+
+```
+
+### **SofaScore Clone**
+
+Either clone or embed the whole website
