@@ -22,7 +22,6 @@ class DataValidationConfig:
     """
     root_dir: Path
     STATUS_FILE: Path
-    all_schema: dict
     dataset_path: Path
 
 @dataclass

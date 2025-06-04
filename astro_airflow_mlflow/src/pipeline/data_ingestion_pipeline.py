@@ -24,13 +24,8 @@ class DataIngestionTrainingPipeline:
     data_set_path = data_ingestion.get_dataset_path()
     src_logger.info(f"We are reading dataset from {data_set_path}\n")
 
-    load_data = data_ingestion.read_data()
-    src_logger.info(f"Data loaded successfully from {data_set_path}\n")
-    src_logger.info(f"Data shape: {load_data.shape}\n")
-    src_logger.info(f"Data columns: {load_data.columns.tolist()}\n")
-
-    data_ingestion.store_data(load_data)
-    src_logger.info(f"Data stored successfully to {data_ingestion.config.ingestion_path}\n")
+    data_ingestion.fetch_all_files()
+    src_logger.info("Data Ingestion completed\n")
     
 if __name__ == '__main__':
   try:
