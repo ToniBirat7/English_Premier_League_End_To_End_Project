@@ -1,4 +1,5 @@
 # We will create the data transformation DAG for Airflow.
+
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
@@ -6,6 +7,12 @@ from src import src_logger as logger
 from src.components.data_transformation import DataTransformation
 from src.config.configuration import ConfigurationManager
 from src.constants import *
+from src.utils.common import read_yaml
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Define the default arguments for the DAG
 default_args = {
@@ -45,4 +52,16 @@ with DAG(
         else:
             logger.warning("Data Transformation did not save any data.")
 
+# Another DAG for the establishing mariadb connection and saving the transformed data
+
+    @task
+    def save_transformed_data_in_mariadb():
+        logger.info("Saving transformed data in MariaDB")
+
+        mariadb_config = read_yaml(CONFIG_FILE_PATH)
+
+        final_dataset_root_dir = mariadb_config['mariadb_load']['final_dataset_path']
+        final_dataset_name = mariadb_config['mariadb_load']['final_dataset_name']
+
+        mariadb_creds = 
     run_data_transformation()

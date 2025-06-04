@@ -1,5 +1,4 @@
 # Here we will define the DAG for data ingestion
-
 from airflow import DAG
 from datetime import datetime, timedelta
 from src import src_logger as logger

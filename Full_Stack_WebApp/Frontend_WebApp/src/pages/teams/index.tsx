@@ -41,9 +41,11 @@ const TeamsPage: React.FC = () => {
         ) : teams.length === 0 ? (
           <div className={styles.error}>No teams found.</div>
         ) : (
-          <div className={styles.teams}>
+          <div className="grid">
             {teams.map((team) => (
-              <TeamCard key={team.id} team={team} />
+              <div key={team.id} className="col-span-3">
+                <TeamCard team={team} />
+              </div>
             ))}
           </div>
         )}

@@ -57,14 +57,15 @@ const MatchesPage: React.FC = () => {
         ) : error ? (
           <div className={styles.error}>{error}</div>
         ) : (
-          <div className={styles.matches}>
+          <div className="grid">
             {matches.length > 0 ? (
               matches.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  onPredict={() => handlePredict(match.id)}
-                />
+                <div key={match.id} className="col-span-6">
+                  <MatchCard
+                    match={match}
+                    onPredict={() => handlePredict(match.id)}
+                  />
+                </div>
               ))
             ) : (
               <div className={styles.noMatches}>

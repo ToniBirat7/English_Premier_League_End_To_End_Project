@@ -19,6 +19,7 @@ class DataTransformation:
         Returns:
             list: A list of pandas DataFrames containing the data from all CSV files in the dataset path.
         """
+
         dataframes = [] # List to hold all dataframes
 
         src_logger.info(f"Transforming data from {self.config.dataset_path}")
@@ -215,7 +216,7 @@ class DataTransformation:
         
         if not match_week_dfs:
             src_logger.error("No match week DataFrames to process.")
-            return []
+            return False
         
         # Concatenate all match week DataFrames into a single DataFrame
         src_logger.info(f"Concatenating {len(match_week_dfs)} match week DataFrames")
@@ -303,7 +304,7 @@ class DataTransformation:
         Args:
             transformed_data (pd.DataFrame): The transformed data to be saved.
         """
-        output_file_path = os.path.join(self.config.root_dir, f"transformed_data_{dt.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        output_file_path = os.path.join(self.config.root_dir, f"transformed_data_final.csv")
 
         # If the directory does not exist, create it
         src_logger.info(f"Directory exists: {os.path.exists(self.config.root_dir)}")
