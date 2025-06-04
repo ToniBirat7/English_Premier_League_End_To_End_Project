@@ -1,11 +1,11 @@
 export interface Team {
   id: number;
   name: string;
-  shortName: string;
+  short_name: string;
   logo?: string;
   stadium: string;
   city: string;
-  founded: number;
+  founded_year: number;
   website?: string;
 }
 

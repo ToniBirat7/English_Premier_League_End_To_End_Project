@@ -6,6 +6,6 @@ class TeamSerializer(serializers.ModelSerializer):
         model = Team
         fields = [
             'id', 'name', 'short_name', 'logo', 'stadium',
-            'city', 'founded_year', 'website', 'created_at', 'updated_at'
+            'city', 'founded_year', 'website'
         ]
-        read_only_fields = ['created_at', 'updated_at'] 
+        read_only_fields = ['id'] 

@@ -32,7 +32,9 @@ with DAG(
         logger.info("Starting data validation task")
         try:
             obj = DataValidationPipeline()
-            obj.main()
+            if not obj.main():
+                logger.info("Data validation failed")
+                return False
             logger.info("Data validation completed successfully")
         except Exception as e:
             logger.error(f"Error in data validation task: {e}")

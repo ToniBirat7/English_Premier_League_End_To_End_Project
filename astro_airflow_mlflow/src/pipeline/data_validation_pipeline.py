@@ -18,7 +18,7 @@ class DataValidationPipeline:
         data_validation = DataValidation(config=config.get_data_validation_config())
         is_valid = data_validation.validate_data()
         data_validation.save_validation_status(is_valid)
-
+        return is_valid
 
 if __name__ == '__main__':
     try:

@@ -5,6 +5,8 @@ from src.utils.common import create_directories
 from src import src_logger
 from pathlib import Path
 import pandas as pd
+import os
+
 class DataValidation:
     def __init__(self, config: DataValidationConfig) -> None:
         self.config = config
@@ -18,10 +20,16 @@ class DataValidation:
         """
         src_logger.info("Validating data against schema")
         # List all the files names from the dataset path, validate if all the files are CSV files
-        file_name_list = [file for file in Path(self.config.dataset_path).glob("*.csv")]
+        file_name_list = [file for file in os.listdir(self.config.dataset_path) if file.endswith('.csv')]
+
+        src_logger.info(f"Found {len(file_name_list)} CSV files in the dataset path")
+
+        src_logger.info(f"CSV files found: {file_name_list}")
+
         if not file_name_list:
             src_logger.error("No CSV files found")
             return False
+        
         src_logger.info("Data validation passed")
         return True
 

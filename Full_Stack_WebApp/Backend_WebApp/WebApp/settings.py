@@ -42,8 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     # Local apps
+    'teams.apps.TeamsConfig',
     'matches',
-    'teams',
     'predictions',
 ]
 
@@ -135,15 +135,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    'DEFAULT_PAGINATION_CLASS': None,  # Disable pagination
+    'PAGE_SIZE': None,  # Disable page size
 }
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Next.js development server
+    "http://localhost:3000",
+    "http://localhost:3001",
 ]
+
+CORS_ALLOW_CREDENTIALS = True

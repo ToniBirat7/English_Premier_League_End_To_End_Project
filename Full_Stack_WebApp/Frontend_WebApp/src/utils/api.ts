@@ -4,11 +4,12 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export const getTeams = async (): Promise<Team[]> => {
-  const response = await fetch(`${API_BASE_URL}/teams/`);
+  const response = await fetch(`${API_BASE_URL}/teams/teams/`);
   if (!response.ok) {
     throw new Error("Failed to fetch teams");
   }
-  return response.json();
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 };
 
 export const getTeam = async (id: number): Promise<Team> => {

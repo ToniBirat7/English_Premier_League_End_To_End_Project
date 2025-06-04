@@ -16,6 +16,7 @@ const TeamsPage: React.FC = () => {
       try {
         setLoading(true);
         const data = await getTeams();
+        console.log("API Response:", data);
         setTeams(data);
         setError(null);
       } catch (err) {
@@ -37,6 +38,8 @@ const TeamsPage: React.FC = () => {
           <Loading message="Loading teams..." />
         ) : error ? (
           <div className={styles.error}>{error}</div>
+        ) : teams.length === 0 ? (
+          <div className={styles.error}>No teams found.</div>
         ) : (
           <div className={styles.teams}>
             {teams.map((team) => (

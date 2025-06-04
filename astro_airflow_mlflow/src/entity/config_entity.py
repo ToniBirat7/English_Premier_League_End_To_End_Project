@@ -29,7 +29,7 @@ class DataTransformationConfig:
     """Data Transformation Configuration"""
     root_dir: Path
     dataset_path: Path
-
+    status_file: Path
 
 @dataclass
 class ModelTrainerConfig:

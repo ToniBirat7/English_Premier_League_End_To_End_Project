@@ -33,7 +33,8 @@ class ConfigurationManager:
   def get_data_transformation_config(self) -> DataTransformationConfig:
     return DataTransformationConfig(
       root_dir=self.config.data_transformation.root_dir,
-      dataset_path=self.config.data_transformation.dataset_location
+      dataset_path=self.config.data_transformation.dataset_location,
+      status_file=self.config.data_transformation.STATUS_FILE
     )
 
   def get_model_trainer_config(self) -> ModelTrainerConfig:

@@ -16,7 +16,8 @@ data_validation:
 
 data_transformation:
   root_dir: artifacts/data_transformation
-  dataset_location: Datasets
+  dataset_location: artifacts/data_ingestion
+  STATUS_FILE: artifacts/data_validation/status.yaml
 
 model_trainer:
   root_dir: artifacts/model_trainer

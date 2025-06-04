@@ -33,6 +33,19 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
             <span className={styles.label}>Founded:</span>
             <span className={styles.value}>{team.founded_year}</span>
           </div>
+          {team.website && (
+            <div className={styles.detail}>
+              <span className={styles.label}>Website:</span>
+              <a
+                href={team.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.website}
+              >
+                {team.website}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </Link>
