@@ -7,17 +7,17 @@ artifact_dir: artifacts
 data_ingestion:
   root_dir: artifacts
   ingestion_dir: artifacts/data_ingestion
-  dataset_location: Datasets/final_dataset.csv
+  dataset_location: Datasets
   ingestion_path: final_dataset.csv
 
 data_validation:
   root_dir: artifacts/data_validation
-  dataset_location: Datasets/final_dataset.csv
+  dataset_location: Datasets/
   STATUS_FILE: artifacts/data_validation/status.yaml
 
 data_transformation:
   root_dir: artifacts/data_transformation
-  dataset_location: Datasets/final_dataset.csv
+  dataset_location: Datasets
 
 model_trainer:
   root_dir: artifacts/model_trainer
