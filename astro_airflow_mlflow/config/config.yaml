@@ -8,11 +8,10 @@ data_ingestion:
   root_dir: artifacts
   ingestion_dir: artifacts/data_ingestion
   dataset_location: Datasets
-  ingestion_path: final_dataset.csv
 
 data_validation:
   root_dir: artifacts/data_validation
-  dataset_location: Datasets/
+  dataset_location: Datasets
   STATUS_FILE: artifacts/data_validation/status.yaml
 
 data_transformation:

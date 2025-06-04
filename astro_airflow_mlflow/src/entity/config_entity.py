@@ -7,7 +7,6 @@ class DataIngestionConfig:
     """Data Ingestion Configuration"""
     dataset_path: Path
     root_dir: Path
-    ingestion_path: Path
     ingestion_dir: Path
 
 @dataclass

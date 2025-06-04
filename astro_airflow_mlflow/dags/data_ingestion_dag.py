@@ -45,8 +45,7 @@ with DAG(
         config_dict = {
             'dataset_path': str(config.dataset_path),
             'root_dir': str(config.root_dir),
-            'ingestion_dir': str(config.ingestion_dir),
-            'ingestion_path': str(config.ingestion_path)
+            'ingestion_dir': str(config.ingestion_dir)
         }
         logger.info(f"Configuration: {config_dict}")
         return config_dict
@@ -69,14 +68,12 @@ with DAG(
         
         # Perform data ingestion
         data_ingestion = DataIngestion(config)
-        data = data_ingestion.read_data()
-        data_ingestion.store_data(data)
+        data_ingestion.fetch_all_files()
         
         logger.info("Data ingestion task completed successfully")
         
         # Return the dataset path as string
         dataset_path = str(data_ingestion.get_dataset_path())
-        logger.info(f"Dataset stored at: {dataset_path}")
         return dataset_path
    
     @task

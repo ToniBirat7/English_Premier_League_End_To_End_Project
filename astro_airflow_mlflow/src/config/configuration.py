@@ -20,7 +20,6 @@ class ConfigurationManager:
     return DataIngestionConfig(
       dataset_path=self.config.data_ingestion.dataset_location,
       root_dir=self.config.data_ingestion.root_dir,
-      ingestion_path=self.config.data_ingestion.ingestion_path,
       ingestion_dir=self.config.data_ingestion.ingestion_dir
     )
 
