@@ -308,3 +308,14 @@ Identify the final columns that you want to keep in the final dataset. This will
 ### **SofaScore Clone**
 
 Either clone or embed the whole website
+
+### **MariadB Connection**
+
+**Direct Declartion of the Values**
+
+If not set the `envs` as `export main_mariadb_container_password=NewStrongPasswordHere`
+then you can directly declare the values in the code.
+
+```bash
+export main_mariadb_container_password=NewStrongPasswordHere scrapped_data_database_1=scrapped_data_database_1
+```

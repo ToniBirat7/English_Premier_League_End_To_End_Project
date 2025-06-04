@@ -68,13 +68,14 @@ const PredictionsPage: React.FC = () => {
         {error ? (
           <div className={styles.error}>{error}</div>
         ) : predictions.length > 0 ? (
-          <div className={styles.predictions}>
+          <div className="grid">
             {predictions.map((prediction) => (
-              <PredictionCard
-                key={prediction.id}
-                prediction={prediction}
-                onDelete={() => handleDelete(prediction.id)}
-              />
+              <div key={prediction.id} className="col-span-4">
+                <PredictionCard
+                  prediction={prediction}
+                  onDelete={() => handleDelete(prediction.id)}
+                />
+              </div>
             ))}
           </div>
         ) : (
