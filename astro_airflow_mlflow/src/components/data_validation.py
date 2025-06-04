@@ -4,6 +4,7 @@ from src.entity.config_entity import DataValidationConfig
 from src.utils.common import create_directories
 from src import src_logger
 from pathlib import Path
+import yaml
 import pandas as pd
 import os
 
@@ -38,8 +39,11 @@ class DataValidation:
         Saves the validation status to a file.
         """
         status_file_path = self.config.STATUS_FILE
+
+        data = {'Validation': status}
+
         with open(status_file_path, 'w') as f:
-            f.write("True" if status else "False")
+            yaml.dump(data, f)
         src_logger.info(f"Validation status saved to {status_file_path}")
 
     def get_dataset_path(self) -> Path:

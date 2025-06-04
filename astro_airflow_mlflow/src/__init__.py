@@ -3,7 +3,7 @@ import sys
 import logging
 
 # log_dirs = '/usr/local/airflow/logs' # Container path for logs
-log_dirs = './logs' # Local path for logs, useful for local development
+log_dirs = '../logs' # Local path for logs, useful for local development
 log_filepath = os.path.join(log_dirs, 'logging.log')
 
 # Create log directory if it doesn't exist
