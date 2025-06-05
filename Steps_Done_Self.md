@@ -321,3 +321,214 @@ export main_mariadb_container_password=NewStrongPasswordHere scrapped_data_datab
 ```
 
 Always clear the Environment Variables after use to avoid any security issues.
+
+```Python
+# import pandas as pd
+# import pymysql
+# from dotenv import load_dotenv
+# import os
+
+# # Clear previous env vars if necessary
+# for var in [
+#     "main_mariadb_container_host",
+#     "main_mariadb_container_port",
+#     "main_mariadb_container_user",
+#     "main_mariadb_container_password",
+#     "scrapped_data_database_1",
+#     "cleaned_data_database_2",
+# ]:
+#     os.environ.pop(var, None)
+
+# # Load environment variables from .env in current directory
+# env_loaded = load_dotenv(override=True)
+# print(f".env loaded: {env_loaded}")
+
+# def create_and_store_small_df():
+#     host = os.getenv("main_mariadb_container_host")
+#     user = os.getenv("main_mariadb_container_user")
+#     password = os.getenv("main_mariadb_container_password")
+#     port = int(os.getenv("main_mariadb_container_port", "3306"))
+#     database = os.getenv("cleaned_data_database_2")
+
+#     print("Loaded env vars:")
+#     print("HOST:", host)
+#     print("USER:", user)
+#     print("PASSWORD:", password)
+#     print("PORT:", port)
+#     print("DB:", database)
+
+#     print("\nTypes of loaded env vars:")
+#     print("HOST type:", type(host))
+#     print("USER type:", type(user))
+#     print("PASSWORD type:", type(password))
+#     print("PORT type:", type(port))
+#     print("DB type:", type(database))
+
+#     # Sample DataFrame
+#     data = {
+#         'id': [1, 2, 3, 4, 5],
+#         'name': ['Arsenal', 'Chelsea', 'Liverpool', 'Man City', 'Man United'],
+#         'points': [78, 65, 82, 89, 73],
+#         'goals_scored': [68, 45, 75, 89, 57]
+#     }
+#     df = pd.DataFrame(data)
+#     print("Sample DataFrame:")
+#     print(df)
+
+#     conn = None
+#     try:
+#         # Connect to MariaDB
+#         conn = pymysql.connect(
+#             host=host,
+#             port=port,
+#             user=user,
+#             password=password,
+#             database=database
+#         )
+#         print("\n✅ Connected to MariaDB successfully!\n")
+
+#         with conn.cursor() as cursor:
+#             table_name = 'sample_epl_data'
+
+#             # Create table if not exists
+#             create_table_sql = f"""
+#             CREATE TABLE IF NOT EXISTS {table_name} (
+#                 id INT PRIMARY KEY,
+#                 name VARCHAR(50),
+#                 points INT,
+#                 goals_scored INT
+#             )
+#             """
+#             cursor.execute(create_table_sql)
+
+#             # Clear existing data in table
+#             cursor.execute(f"DELETE FROM {table_name}")
+
+#             # Insert DataFrame rows into table
+#             insert_sql = f"INSERT INTO {table_name} (id, name, points, goals_scored) VALUES (%s, %s, %s, %s)"
+#             data_to_insert = df.values.tolist()
+#             cursor.executemany(insert_sql, data_to_insert)
+
+#             conn.commit()
+#             print(f"✅ Successfully inserted {len(df)} rows into `{table_name}`")
+
+#             # Fetch and print to verify
+#             cursor.execute(f"SELECT * FROM {table_name}")
+#             results = cursor.fetchall()
+
+#         print("\n✅ Data fetched from MariaDB:")
+#         for row in results:
+#             print(row)
+
+#     except Exception as e:
+#         print(f"\n❌ Error: {e}")
+
+#     finally:
+#         if conn:
+#             conn.close()
+#         print("\n🔒 Connection closed.")
+
+# if __name__ == "__main__":
+#     create_and_store_small_df()
+
+import pandas as pd
+import pymysql
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
+
+def generate_create_table_sql(df, table_name="final_dataset"):
+    dtype_mapping = {
+        'int64': 'INT',
+        'float64': 'DOUBLE',
+        'object': 'VARCHAR(255)',
+        'bool': 'BOOLEAN',
+        'datetime64[ns]': 'DATETIME',
+    }
+
+    columns = []
+    for col, dtype in df.dtypes.items():
+        col_type = dtype_mapping.get(str(dtype), 'VARCHAR(255)')
+        if col == df.columns[0] and col_type in ['INT', 'BIGINT']:
+            columns.append(f"{col} {col_type} PRIMARY KEY")
+        else:
+            columns.append(f"{col} {col_type}")
+
+    columns_sql = ",\n    ".join(columns)
+    create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {columns_sql}\n);"
+    return create_table_sql
+
+def main():
+    # Load DataFrame
+    df = pd.read_csv("./artifacts/data_transformation/transformed_data_final.csv")
+    table_name = "final_dataset"
+
+    # Generate CREATE TABLE SQL
+    create_table_sql = generate_create_table_sql(df, table_name)
+
+    # Get DB credentials from environment variables
+    db_config = {
+        "host": os.getenv("main_mariadb_container_host", "localhost"),
+        "user": os.getenv("main_mariadb_container_user"),
+        "password": os.getenv("main_mariadb_container_password"),
+        "database": os.getenv("cleaned_data_database_2"),
+        "port": int(os.getenv("main_mariadb_container_port", 3306)),
+    }
+
+    # Print environment variables (for debug)
+    print("📦 Environment Variables Used:")
+    print(f"  Host: {db_config['host']}")
+    print(f"  User: {db_config['user']}")
+    print(f"  Password: {db_config['password']}")
+    print(f"  Port: {db_config['port']}")
+    print(f"  Database: {db_config['database']}")
+
+    try:
+        # Connect to the DB
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Create table
+        cursor.execute(create_table_sql)
+        print(f"✅ Table `{table_name}` created or already exists.")
+
+        # Prepare and execute insert query
+        placeholders = ", ".join(["%s"] * len(df.columns))
+        insert_query = f"""
+            INSERT INTO {table_name} ({', '.join(df.columns)})
+            VALUES ({placeholders})
+        """
+        cursor.executemany(insert_query, df.values.tolist())
+        conn.commit()
+        print(f"✅ Inserted {len(df)} rows into `{table_name}`")
+
+    except Exception as e:
+        print("❌ Error:", e)
+
+    finally:
+        if conn:
+            conn.close()
+            print("🔒 Connection closed.")
+
+if __name__ == "__main__":
+    main()
+```
+
+### **Accessing the ENVs in the Airflow Container**
+
+Do not rely on the `.env` file to pass the environment variables to the Airflow container. Instead, use the `docker run` command with the `--env` option or use a `.env` file with the `--env-file` option.
+
+```bash
+docker run --env main_mariadb_container_password=NewStrongPasswordHere --env scrapped_data_database_1=scrapped_data_database_1 your-airflow-image
+```
+
+Or
+
+Use the `docker-compose.yml` file to define the environment variables for the Airflow container.
+
+Or
+
+Use the Airflow Conncetion API to set the environment variables from the `UI`
+then catch them inside the DAG using the `Variable.get()` method.
