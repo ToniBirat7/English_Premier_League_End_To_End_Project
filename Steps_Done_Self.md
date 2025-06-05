@@ -1,3 +1,5 @@
+# **MVP Version: 1.0.0**
+
 ## **Below are the steps that have been completed so far:**
 
 **Note:** Do not copy `.env` file while creating Docker image. It contains sensitive information. Rather use environment variables to pass sensitive information to the container. Or pass the `.env` file while running the container using `--env-file` option.
@@ -430,6 +432,10 @@ then catch them inside the DAG using the `Variable.get()` method.
 
 ### **Start the MariaDB Container From the Airflow DAG**
 
+**For Now we'are manually starting the MariaDB container.**
+
+To automate the process of starting the MariaDB container from within an Airflow DAG, you can use the `DockerOperator`. This operator allows you to run Docker containers as tasks in your Airflow DAG.
+
 Create a DAG task to start the MariaDB container using the `DockerOperator`. This will ensure that the container is started before any other tasks that depend on it.
 
 Install `pip install docker`
@@ -507,3 +513,79 @@ Or
 Pass the ENVs using the Airflow Connection API or the Airflow Variable API.
 
 **But when we use the `.env` file, the `localhost` will not work in the Airflow container because `localhost` will point to the address of the container, but we need our host machine's address. Therefore, we need to find the IP `ip route | grep default` and use that IP in the host name of the `.env` file**
+
+We will need to use the `source` IP address of the host machine in the `.env` file.
+
+```bash
+(.venv) toni-birat@tonibirat:/media/toni-birat/New Volume/English_Premier_League_Complete_Project/astro_airflow_mlflow$ ip route | grep default
+default via 192.168.1.254 dev wlp4s0 proto dhcp src 192.168.1.79 metric 600
+(.venv) toni-birat@tonibirat:/media/toni-birat/New Volume/English_Premier_League_Complete_Project/astro_airflow_mlflow$
+
+main_mariadb_container_host=192.168.1.254
+```
+
+### **Fetch the Data for Model Training**
+
+- Check Redis Connection
+
+First, find all the Dependencies and Model Parameters (HyperParameter Tuning Ranges) that we will need for the model training.
+
+First, configure all the Entities, Configuration, and Pipeline files to fetch the data from the MariaDB database.
+
+- Then Visualize everything in the `MLFLow` as well.
+
+- Store the Train, Test DataFrame in the Redis database for quick access.
+
+- Fetch from the Redis database if the data is already present, otherwise fetch from the MariaDB database.
+
+- Perform the Hyperparameter Tuning using the `MLFLow` and `Optuna` or `Ray Tune`.
+
+- Train the Model with the Parameters and Dependencies fetched from the MariaDB database.
+
+- Save the Best Model
+
+### **FAST API Model Access**
+
+Minimal FastAPI application to access the model and make predictions.
+
+### **Power BI Dashboard**
+
+- Fetch the data from the MariaDB database and visualize it in Power BI.
+
+### **Implement Scraping Simulation and Add the Necessary DAGs in the Pipeline**
+
+### **Web Application**
+
+Complete Web Application with React and Django.
+
+# **MVP Version: 2.0.0**
+
+**Use Docker Compose to manage the containers**
+
+- Create a `docker-compose.yml` file to define the services and their configurations.
+
+- Add Mariadb Services in the `docker-compose.yml` file.
+
+```yaml
+version: "3"
+services:
+  main-mariadb:
+    image: mariadb:latest
+    container_name: main-mariadb
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: NewStrongPasswordHere
+      MYSQL_DATABASE: cleaned_data_database_2
+
+  webserver:
+    depends_on:
+      - main-mariadb
+    environment:
+      main_mariadb_container_host: main-mariadb
+      main_mariadb_container_user: root
+      main_mariadb_container_password: NewStrongPasswordHere
+      main_mariadb_container_database: cleaned_data_database_2
+      main_mariadb_container_port: 3306
+```
