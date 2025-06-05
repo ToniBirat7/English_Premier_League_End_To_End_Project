@@ -361,3 +361,24 @@ def only_hw(string):
         return 'H'
     else:
         return 'NH'
+    
+def generate_create_table_sql(df, table_name="final_dataset"):
+    dtype_mapping = {
+        'int64': 'INT',
+        'float64': 'DOUBLE',
+        'object': 'VARCHAR(255)',
+        'bool': 'BOOLEAN',
+        'datetime64[ns]': 'DATETIME',
+    }
+
+    columns = []
+    for col, dtype in df.dtypes.items():
+        col_type = dtype_mapping.get(str(dtype), 'VARCHAR(255)')
+        if col == df.columns[0] and col_type in ['INT', 'BIGINT']:
+            columns.append(f"{col} {col_type} PRIMARY KEY")
+        else:
+            columns.append(f"{col} {col_type}")
+    
+    columns_sql = ",\n    ".join(columns)
+    create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {columns_sql}\n);"
+    return create_table_sql

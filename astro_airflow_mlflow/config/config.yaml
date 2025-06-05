@@ -22,6 +22,7 @@ data_transformation:
 mariadb_load:
   final_dataset_path: artifacts/data_transformation
   final_dataset_name: transformed_data_final.csv
+  table_name: final_dataset
 
 model_trainer:
   root_dir: artifacts/model_trainer

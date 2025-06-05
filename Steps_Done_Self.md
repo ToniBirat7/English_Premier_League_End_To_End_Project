@@ -323,113 +323,6 @@ export main_mariadb_container_password=NewStrongPasswordHere scrapped_data_datab
 Always clear the Environment Variables after use to avoid any security issues.
 
 ```Python
-# import pandas as pd
-# import pymysql
-# from dotenv import load_dotenv
-# import os
-
-# # Clear previous env vars if necessary
-# for var in [
-#     "main_mariadb_container_host",
-#     "main_mariadb_container_port",
-#     "main_mariadb_container_user",
-#     "main_mariadb_container_password",
-#     "scrapped_data_database_1",
-#     "cleaned_data_database_2",
-# ]:
-#     os.environ.pop(var, None)
-
-# # Load environment variables from .env in current directory
-# env_loaded = load_dotenv(override=True)
-# print(f".env loaded: {env_loaded}")
-
-# def create_and_store_small_df():
-#     host = os.getenv("main_mariadb_container_host")
-#     user = os.getenv("main_mariadb_container_user")
-#     password = os.getenv("main_mariadb_container_password")
-#     port = int(os.getenv("main_mariadb_container_port", "3306"))
-#     database = os.getenv("cleaned_data_database_2")
-
-#     print("Loaded env vars:")
-#     print("HOST:", host)
-#     print("USER:", user)
-#     print("PASSWORD:", password)
-#     print("PORT:", port)
-#     print("DB:", database)
-
-#     print("\nTypes of loaded env vars:")
-#     print("HOST type:", type(host))
-#     print("USER type:", type(user))
-#     print("PASSWORD type:", type(password))
-#     print("PORT type:", type(port))
-#     print("DB type:", type(database))
-
-#     # Sample DataFrame
-#     data = {
-#         'id': [1, 2, 3, 4, 5],
-#         'name': ['Arsenal', 'Chelsea', 'Liverpool', 'Man City', 'Man United'],
-#         'points': [78, 65, 82, 89, 73],
-#         'goals_scored': [68, 45, 75, 89, 57]
-#     }
-#     df = pd.DataFrame(data)
-#     print("Sample DataFrame:")
-#     print(df)
-
-#     conn = None
-#     try:
-#         # Connect to MariaDB
-#         conn = pymysql.connect(
-#             host=host,
-#             port=port,
-#             user=user,
-#             password=password,
-#             database=database
-#         )
-#         print("\n✅ Connected to MariaDB successfully!\n")
-
-#         with conn.cursor() as cursor:
-#             table_name = 'sample_epl_data'
-
-#             # Create table if not exists
-#             create_table_sql = f"""
-#             CREATE TABLE IF NOT EXISTS {table_name} (
-#                 id INT PRIMARY KEY,
-#                 name VARCHAR(50),
-#                 points INT,
-#                 goals_scored INT
-#             )
-#             """
-#             cursor.execute(create_table_sql)
-
-#             # Clear existing data in table
-#             cursor.execute(f"DELETE FROM {table_name}")
-
-#             # Insert DataFrame rows into table
-#             insert_sql = f"INSERT INTO {table_name} (id, name, points, goals_scored) VALUES (%s, %s, %s, %s)"
-#             data_to_insert = df.values.tolist()
-#             cursor.executemany(insert_sql, data_to_insert)
-
-#             conn.commit()
-#             print(f"✅ Successfully inserted {len(df)} rows into `{table_name}`")
-
-#             # Fetch and print to verify
-#             cursor.execute(f"SELECT * FROM {table_name}")
-#             results = cursor.fetchall()
-
-#         print("\n✅ Data fetched from MariaDB:")
-#         for row in results:
-#             print(row)
-
-#     except Exception as e:
-#         print(f"\n❌ Error: {e}")
-
-#     finally:
-#         if conn:
-#             conn.close()
-#         print("\n🔒 Connection closed.")
-
-# if __name__ == "__main__":
-#     create_and_store_small_df()
 
 import pandas as pd
 import pymysql
@@ -520,6 +413,8 @@ if __name__ == "__main__":
 
 Do not rely on the `.env` file to pass the environment variables to the Airflow container. Instead, use the `docker run` command with the `--env` option or use a `.env` file with the `--env-file` option.
 
+We've included the `.env` file in the Dockerfile, but it's not recommended to use it for sensitive information. Instead, pass the environment variables directly when running the container.
+
 ```bash
 docker run --env main_mariadb_container_password=NewStrongPasswordHere --env scrapped_data_database_1=scrapped_data_database_1 your-airflow-image
 ```
@@ -530,5 +425,85 @@ Use the `docker-compose.yml` file to define the environment variables for the Ai
 
 Or
 
-Use the Airflow Conncetion API to set the environment variables from the `UI`
+Use the Airflow Connection API to set the environment variables from the `UI`
 then catch them inside the DAG using the `Variable.get()` method.
+
+### **Start the MariaDB Container From the Airflow DAG**
+
+Create a DAG task to start the MariaDB container using the `DockerOperator`. This will ensure that the container is started before any other tasks that depend on it.
+
+Install `pip install docker`
+
+```Python
+(.venv) toni-birat@tonibirat:/media/toni-birat/New Volume/English_Premier_League_Complete_Project/astro_airflow_mlflow$ sudo usermod -aG docker $USER
+(.venv) toni-birat@tonibirat:/media/toni-birat/New Volume/English_Premier_League_Complete_Project/astro_airflow_mlflow$
+```
+
+### **Connection between the two containers (Astro and Mariadb)**
+
+Use the `docker-compose.yml` file to define the connection between the two containers. This will allow the Airflow container to connect to the MariaDB container using the service name defined in the `docker-compose.yml` file.
+
+Use Astro’s docker-compose or Kubernetes manifests to start MariaDB before Airflow starts.
+
+In local dev: add main-mariadb as a service in docker-compose.override.yml in your Astro project.
+
+```yaml
+version: "3"
+services:
+  main-mariadb:
+    image: mariadb:latest
+    container_name: main-mariadb
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: NewStrongPasswordHere
+      MYSQL_DATABASE: cleaned_data_database_2
+
+  webserver:
+    depends_on:
+      - main-mariadb
+    environment:
+      main_mariadb_container_host: main-mariadb
+      main_mariadb_container_user: root
+      main_mariadb_container_password: NewStrongPasswordHere
+      main_mariadb_container_database: cleaned_data_database_2
+      main_mariadb_container_port: 3306
+```
+
+Either copy the `.env` file to the Airflow container.
+
+We've used this method in the Dockerfile to copy the `.env` file to the Airflow container, but it's not recommended for sensitive information.
+
+```Dockerfile
+FROM astrocrpublic.azurecr.io/runtime:3.0-2
+
+# Set working directory
+WORKDIR /usr/local/airflow
+
+# Copy essential project files for logging test
+COPY src ./src
+COPY config ./config
+COPY params.yaml ./params.yaml
+COPY schema.yaml ./schema.yaml
+COPY .env ./.env
+
+# Create logs directory (instead of copying to avoid Docker issues)
+RUN mkdir -p logs
+
+# Copy project requirements if it exists
+COPY project_requirements.txt ./project_requirements.txt
+
+# Install project-specific Python packages
+RUN pip install --no-cache-dir -r project_requirements.txt || echo "No additional requirements to install"
+
+# Set environment variables for the project
+ENV PYTHONPATH="${PYTHONPATH}:/usr/local/airflow"
+ENV PROJECT_ROOT="/usr/local/airflow"
+```
+
+Or
+
+Pass the ENVs using the Airflow Connection API or the Airflow Variable API.
+
+**But when we use the `.env` file, the `localhost` will not work in the Airflow container because `localhost` will point to the address of the container, but we need our host machine's address. Therefore, we need to find the IP `ip route | grep default` and use that IP in the host name of the `.env` file**
