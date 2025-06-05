@@ -319,3 +319,5 @@ then you can directly declare the values in the code.
 ```bash
 export main_mariadb_container_password=NewStrongPasswordHere scrapped_data_database_1=scrapped_data_database_1
 ```
+
+Always clear the Environment Variables after use to avoid any security issues.
