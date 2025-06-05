@@ -8,6 +8,7 @@ COPY src ./src
 COPY config ./config
 COPY params.yaml ./params.yaml
 COPY schema.yaml ./schema.yaml
+COPY .env ./.env
 
 # Create logs directory (instead of copying to avoid Docker issues)
 RUN mkdir -p logs
