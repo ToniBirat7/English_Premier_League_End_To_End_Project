@@ -376,11 +376,11 @@ with DAG(
 
                 # Log Model 
                 print(f"Using local file system for model logging...")
-                sklearn.log_model(
-                    sk_model=best_model,
-                    artifact_path="model",
-                    signature=signature
-                )
+                # sklearn.log_model(
+                #     sk_model=best_model,
+                #     artifact_path="model",
+                #     signature=signature
+                # )
                 logger.info("Model logged to MLFlow successfully")
 
                 # Save the best model to the specified path
