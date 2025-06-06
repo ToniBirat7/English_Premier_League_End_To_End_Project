@@ -2,21 +2,24 @@
 
 # We will create the data transformation DAG for Airflow.
 
+import os
+import redis
+import pandas as pd
+import pymysql
+import pyarrow as pa
+from io import BytesIO
+from pathlib import Path
 from airflow import DAG
-from airflow.decorators import task
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from airflow.decorators import task
+import pyarrow.parquet as pq
+import mlflow
 from src import src_logger as logger
 from src.constants import *
 from src.utils.common import read_yaml, create_directories
-from dotenv import load_dotenv
-import os
-import pymysql
-import pandas as pd
-from pathlib import Path
-import redis
-import pyarrow as pa
-import pyarrow.parquet as pq
-from io import BytesIO
+from src.components.model_trainer import ModelTrainer
+from src.config.configuration import ConfigurationManager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,6 +39,11 @@ redis_config = {
   "name": os.getenv("redis_container_name", "main-redis"),
 }
 
+ml_flow_config = {
+  "uri": os.getenv('MLFLOW_TRACKING_URI'),
+  "experiment_name": os.getenv('MLFLOW_EXPERIMENT_NAME')
+}
+
 logger.info("📦 Environment Variables Used:")
 logger.info(f"  Host: {db_config['host']}")
 logger.info(f"  User: {db_config['user']}")
@@ -46,6 +54,9 @@ logger.info("📦 Redis Configuration:")
 logger.info(f"  Redis Host: {redis_config['host']}")
 logger.info(f"  Redis Port: {redis_config['port']}")
 logger.info(f"  Redis Name: {redis_config['name']}")  
+logger.info("📦 MLFlow Configuration:")
+logger.info(f"  MLFlow URI: {ml_flow_config['uri']}")
+logger.info(f"  MLFlow Experiment Name: {ml_flow_config['experiment_name']}")
 
 # Define the default arguments for the DAG
 default_args = {
@@ -61,7 +72,7 @@ model_train_config = read_yaml(CONFIG_FILE_PATH)
 
 # Define the DAG
 with DAG(
-    dag_id='data_transformation',
+    dag_id='model_train',
     default_args=default_args,
     schedule='@daily',
     catchup=False
@@ -109,12 +120,13 @@ with DAG(
             df.to_csv(final_dataset_path, index=False)
             logger.info(f"Final dataset saved to {final_dataset_path}")
 
-            return Path(final_dataset_path)
+            return final_dataset_path
 
         except Exception as e:
             logger.error(f"Error during data loading and transformation: {e}")
         finally:
             connection.close()
+            logger.info("Database connection closed.")
     @task
     def load_final_csv_file_and_save_to_redis(final_dataset_path):
         logger.info("Loading final CSV file and saving to Redis")
@@ -160,9 +172,10 @@ with DAG(
         
         logger.info("Loading data from Redis and visualizing with MLFlow")
 
+        df = None
         # Load data from Redis
         try:
-            redis_client = redis.Redis(host=model_train_config['redis_key']['host'], port=model_train_config['redis_key']['port'], decode_responses=False)
+            redis_client = redis.Redis(host=redis_config['host'], port=redis_config['port'], decode_responses=False)
             redis_client.ping()
             logger.info("✅ Redis connection successful")
             # Fetch the final dataset from Redis
@@ -184,6 +197,62 @@ with DAG(
                 logger.info(f"Final dataset loaded from Redis columns: {df.columns.tolist()}")
             else:
                 logger.warning(f"⚠️ No data found in Redis for key: {model_train_config['redis_key']['final_dataset_key']}")
+                return
+
+            # Configure Model Trainer
+            config = ConfigurationManager(
+                config_file_path=CONFIG_FILE_PATH,
+                params_file_path=PARAMS_FILE_PATH,
+                schema_file_path=SCHEMA_FILE_PATH
+            ).get_model_trainer_config()
+
+            logger.info("Initialized Config Manager for Model Trainer")
+
+            # Initialize Model Trainer
+            model_trainer = ModelTrainer(config=config)
+
+            # Get all the visualizations
+            if df is not None:
+                logger.info("Starting data visualization")
+                plots_created = model_trainer.get_visualized_data(df)
+                if plots_created is not None:
+                    logger.info(f"Data visualization completed with {len(plots_created)} plots created.")
+                else:
+                    logger.warning("⚠️ No plots were created during visualization")
+            else:
+                logger.error("❌ DataFrame is None, cannot proceed with visualization")
+
+           # Log those visualizations to MLFlow
+            logger.info("Logging visualizations to MLFlow")
+
+            if ml_flow_config['uri']:
+                mlflow.set_tracking_uri(ml_flow_config['uri'])
+            else:
+                logger.warning("MLFlow tracking URI is not set, using default")
+
+            if ml_flow_config['experiment_name']:
+                mlflow.set_experiment(ml_flow_config['experiment_name'])
+            else:
+                logger.warning("MLFlow experiment name is not set, using default")
+            
+            with mlflow.start_run(run_name="Model_Training_Visualizations"):
+                # Log Dummy parameters for the run
+                mlflow.log_param("model_name", config.model_name)
+                mlflow.log_param("model_params", config.model_params)
+                mlflow.log_param("train_data_path", config.train_data_path)
+                mlflow.log_param("target_column", config.target_column)
+
+                # Log each plot created
+                for i, plot in enumerate(plots_created):
+                    if isinstance(plot, pd.io.formats.style.Styler):
+                        # Convert styled DataFrame to HTML and log it
+                        html = plot.render()
+                        mlflow.log_text(html, f"plot_{i}.html")
+                        logger.info(f"Logged plot_{i}.html to MLFlow")
+                    else:
+                        # Log the plot as an image
+                        mlflow.log_figure(plot, f"plot_{i}.png")
+                        logger.info(f"Logged plot_{i}.png to MLFlow")
         except Exception as e:
             logger.error(f"❌ Error loading final dataset from Redis: {e}")
             return
@@ -191,3 +260,4 @@ with DAG(
     # Task Dependency
     load_and_transform_data_task = load_from_mariadb_save_the_final_dataset()
     save_to_redis_task = load_final_csv_file_and_save_to_redis(load_and_transform_data_task)
+    load_data_from_redis_visualize_with_MLFlow()

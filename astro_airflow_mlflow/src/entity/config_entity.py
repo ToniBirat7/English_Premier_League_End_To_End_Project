@@ -43,5 +43,4 @@ class ModelTrainerConfig:
     train_data_path: Path
     test_data_path: Path
     target_column: str
-    final_dataset_path: Path
 

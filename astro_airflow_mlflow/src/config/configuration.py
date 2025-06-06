@@ -47,6 +47,5 @@ class ConfigurationManager:
       test_dir=self.config.model_trainer.test_dir,
       train_data_path=self.config.model_trainer.train_dataset_name,
       test_data_path=self.config.model_trainer.test_dataset_name,
-      final_dataset_path=self.config.model_trainer.final_dataset_path,
       target_column=self.config.model_trainer.target_column
     )

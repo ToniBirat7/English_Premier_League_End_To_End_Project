@@ -132,5 +132,3 @@ with DAG(
     # Define the task dependencies
     run_data_transformation_task = run_data_transformation()
     save_transformed_data_in_mariadb_task = save_transformed_data_in_mariadb()
-
-    run_data_transformation_task >> save_transformed_data_in_mariadb_task
