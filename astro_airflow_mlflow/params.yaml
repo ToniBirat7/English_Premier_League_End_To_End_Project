@@ -1,5 +1,12 @@
-# Parameters for the project
+# HyperParameters for the project
 
-ElasticNet:
-  alpha: 0.2
-  l1_ratio: 0.1
+XGBoost:
+  learning_rate: 0.1
+  n_estimators: 40
+  max_depth: 3
+  min_child_weight: 3
+  gamma: 0.4
+  subsample: 0.8
+  colsample_bytree: 0.8
+  scale_pos_weight: 1
+  reg_alpha: 0.00001

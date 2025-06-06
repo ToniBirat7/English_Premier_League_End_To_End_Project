@@ -382,3 +382,22 @@ def generate_create_table_sql(df, table_name="final_dataset"):
     columns_sql = ",\n    ".join(columns)
     create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {columns_sql}\n);"
     return create_table_sql
+
+#we want continous vars that are integers for our input data, so lets remove any categorical vars
+def preprocess_features(X):
+    ''' Preprocesses the football data and converts catagorical variables into dummy variables. '''
+    
+    # Initialize new output DataFrame
+    output = pd.DataFrame(index = X.index)
+
+    # Investigate each feature column for the data
+    for col, col_data in X.items():
+
+        # If data type is categorical, convert to dummy variables
+        if col_data.dtype == object:
+            col_data = pd.get_dummies(col_data, prefix = col)
+                    
+        # Collect the revised columns
+        output = output.join(col_data)
+    
+    return output

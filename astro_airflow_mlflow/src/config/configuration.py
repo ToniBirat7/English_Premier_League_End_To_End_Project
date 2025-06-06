@@ -40,10 +40,13 @@ class ConfigurationManager:
   def get_model_trainer_config(self) -> ModelTrainerConfig:
     return ModelTrainerConfig(
       root_dir=self.config.model_trainer.root_dir,
-      model_path=self.config.model_trainer.model_dir,
+      model_path=self.config.model_trainer.save_model_dir,
       model_name=self.config.model_trainer.model_name,
-      model_params=self.params.ElasticNet,
-      train_data_path=self.config.model_trainer.train_dataset_path,
-      test_data_path=self.config.model_trainer.test_dataset_path,
-      target_column=self.schema.target_column
+      model_params=self.params.XGBoost,
+      train_dir=self.config.model_trainer.train_dir,
+      test_dir=self.config.model_trainer.test_dir,
+      train_data_path=self.config.model_trainer.train_dataset_name,
+      test_data_path=self.config.model_trainer.test_dataset_name,
+      final_dataset_path=self.config.model_trainer.final_dataset_path,
+      target_column=self.config.model_trainer.target_column
     )

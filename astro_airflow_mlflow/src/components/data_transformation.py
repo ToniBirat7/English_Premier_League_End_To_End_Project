@@ -259,7 +259,6 @@ class DataTransformation:
         single_dataframe['FTR'] = single_dataframe.FTR.apply(only_hw)
 
         # Remove the unnecessary columns
-
         new_single_dataframe = single_dataframe.copy().drop(columns =['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG',
           'HTGS', 'ATGS', 'HTGC', 'ATGC',
           'HM4', 'HM5','AM4', 'AM5', 'MW', 'HTFormPtsStr',
@@ -288,6 +287,35 @@ class DataTransformation:
         src_logger.info("Number of matches won by home team: {}".format(n_homewins))
         src_logger.info("Win rate of home team: {:.2f}%".format(win_rate))
 
+        # Separate into feature set and target variable
+        #FTR = Full Time Result (H=Home Win, D=Draw, A=Away Win)
+        X_all = new_single_dataframe.drop(columns=['FTR'])
+        y_all = new_single_dataframe['FTR']
+
+        # Standardising the data.
+        from sklearn.preprocessing import scale
+
+        #Center to the mean and component wise scale to unit variance.
+        cols = ['HTGD','ATGD','HTP','ATP']
+        for col in cols:
+            X_all[col] = scale(X_all[col])
+
+        #last 3 wins for both sides
+        X_all.HM1 = X_all.HM1.astype('str')
+        X_all.HM2 = X_all.HM2.astype('str')
+        X_all.HM3 = X_all.HM3.astype('str')
+        X_all.AM1 = X_all.AM1.astype('str')
+        X_all.AM2 = X_all.AM2.astype('str')
+        X_all.AM3 = X_all.AM3.astype('str')
+
+        x_all = preprocess_features(X_all)
+        src_logger.info("Processed feature columns ({} total features):\n{}".format(len(X_all.columns), list(X_all.columns)))
+
+        # Combine the processed features and target variable into a single DataFrame
+        new_single_dataframe = pd.concat([x_all, y_all], axis=1)
+        src_logger.info(f"Transformed DataFrame shape: {new_single_dataframe.shape}")
+        src_logger.info(f"Transformed DataFrame columns: {new_single_dataframe.columns.tolist()}")
+    
         # Save the transformed data to a CSV file
         is_saved = self.save_transformed_data(new_single_dataframe)
 

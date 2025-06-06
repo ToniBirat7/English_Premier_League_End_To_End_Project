@@ -38,7 +38,10 @@ class ModelTrainerConfig:
     model_path: Path
     model_name: str
     model_params: dict
+    train_dir: Path
+    test_dir: Path
     train_data_path: Path
     test_data_path: Path
     target_column: str
+    final_dataset_path: Path
 
