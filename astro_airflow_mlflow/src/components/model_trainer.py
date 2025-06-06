@@ -6,6 +6,12 @@ from src.utils.common import create_directories
 from src.utils.eda_functions.visualization_methods import *
 from src import src_logger as logger
 import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer, f1_score
+import xgboost as xgb
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
 
 class ModelTrainer:
     def __init__(self, config: ModelTrainerConfig) -> None:
@@ -69,3 +75,66 @@ class ModelTrainer:
         except Exception as e:
             logger.error(f"Error in visualizing data: {e}")
             return None
+    
+    def hyperparameter_tuning(self, X_train, y_train, parameters: dict) :
+
+      logger.info("Starting hyperparameter tuning...")
+
+      # TODO: Initialize the classifier
+      clf = xgb.XGBClassifier(seed=2)
+
+      # TODO: Make an f1 scoring function using 'make_scorer' 
+      f1_scorer = make_scorer(f1_score, pos_label=0)  # 0 corresponds to 'H' in encoded labels
+
+      # TODO: Perform grid search on the classifier using the f1_scorer as the scoring method
+      grid_obj = GridSearchCV(clf,
+                      scoring=f1_scorer,
+                      param_grid=parameters,
+                      cv=5)
+      
+      grid_obj.fit(X_train, y_train)
+
+      logger.info("Hyperparameter tuning completed.")
+      logger.info(f"Best parameters found: {grid_obj.best_params_}")
+      logger.info(f"Best score achieved: {grid_obj.best_score_}")
+
+      return grid_obj
+  
+    def split_data(self, data: pd.DataFrame):
+          """
+          Split the data into training and testing sets.
+          """
+          logger.info("Splitting data into training and testing sets...")
+
+          X_all = data.drop(columns=['FTR'])
+          y_all = data['FTR']
+
+          return X_all, y_all
+    
+    def split_data_train__test(self, X_all, y_all):
+        """
+        Split the data into training and testing sets.
+        """
+        logger.info("Splitting data into training and testing sets...")
+        X_train, X_test, y_train, y_test = train_test_split(X_all, y_all,
+                                                            test_size=0.3,
+                                                            random_state=2,
+                                                            stratify=y_all)
+        logger.info("Data splitting completed.")
+        return X_train, X_test, y_train, y_test
+    
+    def encode_variable(self, y_train, y_test):
+        """
+        Encode categorical variables using one-hot encoding.
+        """
+        label_encoder = LabelEncoder()
+        y_train_encoded = label_encoder.fit_transform(y_train)
+        y_test_encoded = label_encoder.transform(y_test)
+        return y_train_encoded, y_test_encoded
+    
+    def predict_labels(self,clf, features, target):
+      ''' Makes predictions using a fit classifier based on F1 score. '''
+
+      y_pred = clf.predict(features)
+      
+      return f1_score(target, y_pred, pos_label=0), sum(target == y_pred) / float(len(y_pred))

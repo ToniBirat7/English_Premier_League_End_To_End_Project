@@ -20,6 +20,12 @@ from src.constants import *
 from src.utils.common import read_yaml, create_directories
 from src.components.model_trainer import ModelTrainer
 from src.config.configuration import ConfigurationManager
+from mlflow.models import infer_signature
+from mlflow import sklearn
+from sklearn.metrics import confusion_matrix, classification_report
+import joblib
+import pickle
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -184,8 +190,7 @@ with DAG(
             # Check if the key exists in Redis
             if not redis_client.exists(model_train_config['redis_key']['final_dataset_key']):
                 logger.error(f"❌ Redis key '{model_train_config['redis_key']['final_dataset_key']}' does not exist.")
-                return
-            logger.info(f"✅ Redis key '{model_train_config['redis_key']['final_dataset_key']}' exists. Proceeding to load data.")
+            # logger.info(f"✅ Redis key '{model_train_config['redis_key']['final_dataset_key']}' exists. Proceeding to load data.")
 
             # Load the final dataset from Redis
             parquet_bytes = redis_client.get(model_train_config['redis_key']['final_dataset_key'])
@@ -241,18 +246,167 @@ with DAG(
                 mlflow.log_param("model_params", config.model_params)
                 mlflow.log_param("train_data_path", config.train_data_path)
                 mlflow.log_param("target_column", config.target_column)
+        except Exception as e:
+            logger.error(f"❌ Error loading final dataset from Redis: {e}")
+            return
+        
+    @task
+    def load_data_from_redis_for_hyperparameter_tuning():
+        logger.info("Loading data from Redis for hyperparameter tuning")
 
-                # Log each plot created
-                for i, plot in enumerate(plots_created):
-                    if isinstance(plot, pd.io.formats.style.Styler):
-                        # Convert styled DataFrame to HTML and log it
-                        html = plot.render()
-                        mlflow.log_text(html, f"plot_{i}.html")
-                        logger.info(f"Logged plot_{i}.html to MLFlow")
-                    else:
-                        # Log the plot as an image
-                        mlflow.log_figure(plot, f"plot_{i}.png")
-                        logger.info(f"Logged plot_{i}.png to MLFlow")
+        # Load data from Redis
+        try:
+            redis_client = redis.Redis(host=redis_config['host'], port=redis_config['port'], decode_responses=False)
+            redis_client.ping()
+            logger.info("✅ Redis connection successful")
+            # Fetch the final dataset from Redis
+            logger.info(f"Fetching final dataset from Redis with key: {model_train_config['redis_key']['final_dataset_key']}")
+
+            # Check if the key exists in Redis
+            if not redis_client.exists(model_train_config['redis_key']['final_dataset_key']):
+                logger.error(f"❌ Redis key '{model_train_config['redis_key']['final_dataset_key']}' does not exist.")
+            # logger.info(f"✅ Redis key '{model_train_config['redis_key']['final_dataset_key']}' exists. Proceeding to load data.")
+
+            # Load the final dataset from Redis
+            parquet_bytes = redis_client.get(model_train_config['redis_key']['final_dataset_key'])
+            if parquet_bytes:
+                buffer = BytesIO(parquet_bytes)
+                table = pq.read_table(buffer)
+                df = table.to_pandas()
+                logger.info(f"✅ Final dataset loaded from Redis with shape: {df.shape}")
+                logger.info(f"Final dataset loaded from Redis columns: {df.columns.tolist()}")
+            else:
+                logger.warning(f"⚠️ No data found in Redis for key: {model_train_config['redis_key']['final_dataset_key']}")
+                return
+
+            # Configure Model Trainer
+            config = ConfigurationManager(
+                config_file_path=CONFIG_FILE_PATH,
+                params_file_path=PARAMS_FILE_PATH,
+                schema_file_path=SCHEMA_FILE_PATH
+            ).get_model_trainer_config()
+
+            logger.info("Initialized Config Manager for Model Trainer")
+
+            # Initialize Model Trainer
+            model_trainer = ModelTrainer(config=config)
+
+            # Split the DataFrame into features and target
+            X_all, y_all = model_trainer.split_data(df)
+
+            # Split the data into training and testing sets
+            X_train, X_test, y_train, y_test = model_trainer.split_data_train__test(X_all, y_all)
+
+            # Log the training and testing data shapes
+            logger.info(f"Training data shape: {X_train.shape}, Testing data shape: {X_test.shape}")
+            logger.info(f"Training target shape: {y_train.shape}, Testing target shape: {y_test.shape}")
+
+            # Encode the target variable
+            y_train_encoded, y_test_encoded = model_trainer.encode_variable(y_train, y_test)
+
+            # Set inference signature for the best model
+            signature = infer_signature(X_train, y_train_encoded)
+
+            # Set the MLFlow tracking URI and experiment name
+            if ml_flow_config['uri']:
+                mlflow.set_tracking_uri(ml_flow_config['uri'])
+                mlflow.set_experiment(ml_flow_config['experiment_name'])
+            else:
+                logger.warning("MLFlow tracking URI is not set, using default")
+            
+            with mlflow.start_run(run_name="Hyperparameter_Tuning"):
+                
+                # Perform hyperparameter tuning
+                logger.info("Starting hyperparameter tuning")
+                parameters = { 'learning_rate' : [0.1],
+                     'n_estimators' : [40],
+                     'max_depth': [3],
+                     'min_child_weight': [3],
+                     'gamma':[0.4],
+                     'subsample' : [0.8],
+                     'colsample_bytree' : [0.8],
+                     'scale_pos_weight' : [1],
+                     'reg_alpha':[1e-5]
+                   }  
+                grid_search = model_trainer.hyperparameter_tuning(X_train, y_train_encoded, parameters)
+
+                mlflow.log_param("model_name", config.model_name)
+                mlflow.log_param("model_params", config.model_params)
+                mlflow.log_param("train_data_path", config.train_data_path)
+                mlflow.log_param("target_column", config.target_column)
+
+                best_model = grid_search.best_estimator_
+                logger.info(f"Best model found: {best_model}")
+
+                # Find the F1 score of the best model
+                train_f1, train_accuracy = model_trainer.predict_labels(best_model, X_train, y_train_encoded)
+                test_f1, test_accuracy = model_trainer.predict_labels(best_model, X_test, y_test_encoded)
+
+                logger.info(f"Train F1 Score: {train_f1}, Train Accuracy: {train_accuracy}")
+                logger.info(f"Test F1 Score: {test_f1}, Test Accuracy: {test_accuracy}")
+
+                # Mlflow metrics logging
+                mlflow.log_metric("train_f1_score", float(train_f1))
+                mlflow.log_metric("train_accuracy", float(train_accuracy))
+                mlflow.log_metric("test_f1_score", float(test_f1))
+                mlflow.log_metric("test_accuracy", float(test_accuracy))
+
+                # Mlflow log parameters
+                for key, value in grid_search.best_params_.items():
+                    mlflow.log_param(key, value)
+
+                logger.info("Hyperparameter tuning completed successfully")
+
+                # Confusion Matrix and Classification Report
+                logger.info("Generating confusion matrix and classification report")
+                y_test_pred = best_model.predict(X_test)
+
+                cm = confusion_matrix(y_test_encoded, y_test_pred)
+                cr = classification_report(y_test_encoded, y_test_pred)
+
+                logger.info(f"Confusion Matrix:\n{cm}")
+                logger.info(f"Classification Report:\n{cr}")
+
+                # Log confusion matrix and classification report to MLFlow
+                mlflow.log_text(str(cm), "confusion_matrix.txt")
+                mlflow.log_text(str(cr), "classification_report.txt")
+
+                # Log the Model Signature
+                mlflow.log_param("model_signature", str(signature))
+
+                # Log Model 
+                print(f"Using local file system for model logging...")
+                sklearn.log_model(
+                    sk_model=best_model,
+                    artifact_path="model",
+                    signature=signature
+                )
+                logger.info("Model logged to MLFlow successfully")
+
+                # Save the best model to the specified path
+                model_save_dir = os.path.join(config.root_dir, config.model_path)
+                model_save_path = os.path.join(model_save_dir, config.model_name)
+
+                logger.info(f"Model save directory: {model_save_dir}")
+                logger.info(f"Saving the best model to {model_save_path}")
+
+                create_directories([model_save_dir])
+                
+                # Save the model with Pickle and Joblib
+                try:
+                    # Save the model using joblib
+                    joblib.dump(best_model, model_save_path + '.joblib')
+                    logger.info(f"Model saved successfully to {model_save_path}.joblib")
+                    mlflow.log_artifact(model_save_path + '.joblib')
+
+                    # Save the model using pickle
+                    with open(model_save_path + '.pkl', 'wb') as f:
+                        pickle.dump(best_model, f)
+                    logger.info(f"Model saved successfully to {model_save_path}.pkl")
+                    mlflow.log_artifact(model_save_path + '.pkl')
+                except Exception as e:
+                    logger.error(f"❌ Error saving model artifacts: {e}")
+
         except Exception as e:
             logger.error(f"❌ Error loading final dataset from Redis: {e}")
             return
@@ -261,3 +415,4 @@ with DAG(
     load_and_transform_data_task = load_from_mariadb_save_the_final_dataset()
     save_to_redis_task = load_final_csv_file_and_save_to_redis(load_and_transform_data_task)
     load_data_from_redis_visualize_with_MLFlow()
+    load_data_from_redis_for_hyperparameter_tuning()
