@@ -618,3 +618,10 @@ services:
       main_mariadb_container_database: cleaned_data_database_2
       main_mariadb_container_port: 3306
 ```
+
+### **Scrapping and Psotgres**
+
+```bash
+toni-birat@tonibirat:~$ docker run --name epl_postgres -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=epl_scrapped   -p 5434:5432   -d postgres:15-alpine
+```
+

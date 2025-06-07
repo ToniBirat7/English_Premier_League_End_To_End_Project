@@ -1,0 +1,367 @@
+/* Table Page Styles */
+.table-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Page Header */
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.page-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-subtitle {
+  color: #666;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Controls Section */
+.controls-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.season-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.season-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.season-select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.season-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legend-item.champions-league .legend-color {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.legend-item.europa-league .legend-color {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+}
+
+.legend-item.conference-league .legend-color {
+  background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+}
+
+.legend-item.relegation .legend-color {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+}
+
+/* Table Container */
+.table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* League Table */
+.league-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.league-table th {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.league-table th.sortable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.league-table th.sortable:hover {
+  background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+}
+
+.league-table th.active {
+  background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+}
+
+.position-header,
+.team-header {
+  text-align: left;
+}
+
+/* Table Rows */
+.table-row {
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.table-row:hover {
+  background: #f8f9fa;
+  transform: scale(1.01);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.table-row.champions-league::before {
+  background: linear-gradient(180deg, #4CAF50, #45a049);
+}
+
+.table-row.europa-league::before {
+  background: linear-gradient(180deg, #FF9800, #F57C00);
+}
+
+.table-row.conference-league::before {
+  background: linear-gradient(180deg, #9C27B0, #7B1FA2);
+}
+
+.table-row.relegation::before {
+  background: linear-gradient(180deg, #f44336, #d32f2f);
+}
+
+/* Table Cells */
+.league-table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.position {
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  width: 60px;
+}
+
+.position-number {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  border-radius: 50%;
+  background: #f8f9fa;
+  font-size: 0.85rem;
+}
+
+.team-cell {
+  min-width: 200px;
+}
+
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.team-logo {
+  font-size: 1.25rem;
+  width: 30px;
+  text-align: center;
+}
+
+.team-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.stat {
+  text-align: center;
+  font-weight: 500;
+  color: #666;
+}
+
+.stat.positive {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.stat.negative {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.points {
+  text-align: center;
+  font-weight: 700;
+  color: #333;
+  background: #f8f9fa;
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .table-page {
+    padding: 1rem;
+  }
+
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .legend {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .controls-section {
+    padding: 1rem;
+  }
+
+  .legend {
+    gap: 1rem;
+  }
+
+  .legend-item {
+    font-size: 0.8rem;
+  }
+
+  .league-table {
+    font-size: 0.85rem;
+  }
+
+  .league-table th,
+  .league-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .team-name {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-info {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  .team-logo {
+    font-size: 1rem;
+  }
+
+  .team-name {
+    font-size: 0.8rem;
+  }
+
+  .legend {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+}
