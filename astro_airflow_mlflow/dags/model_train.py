@@ -26,7 +26,6 @@ from sklearn.metrics import confusion_matrix, classification_report
 import joblib
 import pickle
 
-
 # Load environment variables from .env file
 load_dotenv()
 

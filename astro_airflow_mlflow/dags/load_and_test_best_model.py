@@ -68,11 +68,11 @@ logger.info(f"  MLFlow Experiment Name: {ml_flow_config['experiment_name']}")
 
 # Define the default arguments for the DAG
 default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+  'owner': 'airflow',
+  'depends_on_past': False,
+  'start_date': datetime(2023, 1, 1),
+  'retries': 1,
+  'retry_delay': timedelta(minutes=5),
 }
 
 # Read the MariaDB configuration
@@ -80,131 +80,132 @@ model_train_config = read_yaml(CONFIG_FILE_PATH)
 
 # Define the DAG
 with DAG(
-    dag_id='model_train',
-    default_args=default_args,
-    schedule='@daily',
-    catchup=False
+  dag_id='load_and_test_best_model',
+  description='Load the best model from MLFlow and test it with data from Redis',
+  default_args=default_args,
+  schedule='@daily',
+  catchup=False
 ) as dag:
 
-    @task
-    def load_model_from_mlflow_and_test():
-        # Load data from Redis and test the best model from MLFlow
-        logger.info("Starting the process to load model from MLFlow and test it with data from Redis")
-        try:
-            redis_client = redis.Redis(host=redis_config['host'], port=redis_config['port'], decode_responses=False)
-            redis_client.ping()
-            logger.info("✅ Redis connection successful")
-            # Fetch the final dataset from Redis
-            logger.info(f"Fetching final dataset from Redis with key: {model_train_config['redis_key']['final_dataset_key']}")
+  @task
+  def load_model_from_mlflow_and_test():
+    # Load data from Redis and test the best model from MLFlow
+    logger.info("Starting the process to load model from MLFlow and test it with data from Redis")
+    try:
+      redis_client = redis.Redis(host=redis_config['host'], port=redis_config['port'], decode_responses=False)
+      redis_client.ping()
+      logger.info("✅ Redis connection successful")
+      # Fetch the final dataset from Redis
+      logger.info(f"Fetching final dataset from Redis with key: {model_train_config['redis_key']['final_dataset_key']}")
 
-            # Check if the key exists in Redis
-            if not redis_client.exists(model_train_config['redis_key']['final_dataset_key']):
-                logger.error(f"❌ Redis key '{model_train_config['redis_key']['final_dataset_key']}' does not exist.")
+      # Check if the key exists in Redis
+      if not redis_client.exists(model_train_config['redis_key']['final_dataset_key']):
+        logger.error(f"❌ Redis key '{model_train_config['redis_key']['final_dataset_key']}' does not exist.")
 
-            # Load the final dataset from Redis
-            parquet_bytes = redis_client.get(model_train_config['redis_key']['final_dataset_key'])
-            if parquet_bytes:
-                buffer = BytesIO(parquet_bytes)
-                table = pq.read_table(buffer)
-                df = table.to_pandas()
-                logger.info(f"✅ Final dataset loaded from Redis with shape: {df.shape}")
-                logger.info(f"Final dataset loaded from Redis columns: {df.columns.tolist()}")
-            else:
-                logger.warning(f"⚠️ No data found in Redis for key: {model_train_config['redis_key']['final_dataset_key']}")
-                return
-        except Exception as e:
-            logger.error(f"❌ Error loading data from Redis: {e}")
+      # Load the final dataset from Redis
+      parquet_bytes = redis_client.get(model_train_config['redis_key']['final_dataset_key'])
+      if parquet_bytes:
+        buffer = BytesIO(parquet_bytes)
+        table = pq.read_table(buffer)
+        df = table.to_pandas()
+        logger.info(f"✅ Final dataset loaded from Redis with shape: {df.shape}")
+        logger.info(f"Final dataset loaded from Redis columns: {df.columns.tolist()}")
+      else:
+        logger.warning(f"⚠️ No data found in Redis for key: {model_train_config['redis_key']['final_dataset_key']}")
+        return
+    except Exception as e:
+      logger.error(f"❌ Error loading data from Redis: {e}")
 
-        try:
-            if ml_flow_config['uri'] is None:
-                logger.error("❌ MLFlow tracking URI is not set in environment variables")
-                raise ValueError("MLFlow tracking URI is required")
-            
-            mlflow.set_tracking_uri(ml_flow_config['uri'])
-            mlflow.set_experiment('Load and Test Best Model Experiment')
-            logger.info(f"✅ MLFlow tracking URI set to: {ml_flow_config['uri']}")
-            logger.info(f"✅ MLFlow experiment name set to: Load and Test Best Model Experiment")
+    try:
+      if ml_flow_config['uri'] is None:
+        logger.error("❌ MLFlow tracking URI is not set in environment variables")
+        raise ValueError("MLFlow tracking URI is required")
+      
+      mlflow.set_tracking_uri(ml_flow_config['uri'])
+      mlflow.set_experiment('Load and Test Best Model Experiment')
+      logger.info(f"✅ MLFlow tracking URI set to: {ml_flow_config['uri']}")
+      logger.info(f"✅ MLFlow experiment name set to: Load and Test Best Model Experiment")
 
-            # Load the best model from MLFlow
-            model_uri = f"models:/{REGISTERED_MODEL_NAME}/{MODEL_VERSION}"
-            logger.info(f"Loading model from MLFlow with URI: {model_uri}")
-            model = mlflow.pyfunc.load_model(model_uri)
-            logger.info(f"✅ Model loaded from MLFlow with URI: {model_uri}")
+      # Load the best model from MLFlow
+      model_uri = f"models:/{REGISTERED_MODEL_NAME}/{MODEL_VERSION}"
+      logger.info(f"Loading model from MLFlow with URI: {model_uri}")
+      model = mlflow.pyfunc.load_model(model_uri)
+      logger.info(f"✅ Model loaded from MLFlow with URI: {model_uri}")
 
-            # Configure Model Trainer
-            config = ConfigurationManager(
-              config_file_path=CONFIG_FILE_PATH,
-              params_file_path=PARAMS_FILE_PATH,
-              schema_file_path=SCHEMA_FILE_PATH
-            ).get_model_trainer_config()
+      # Configure Model Trainer
+      config = ConfigurationManager(
+        config_file_path=CONFIG_FILE_PATH,
+        params_file_path=PARAMS_FILE_PATH,
+        schema_file_path=SCHEMA_FILE_PATH
+      ).get_model_trainer_config()
 
-            logger.info("Initialized Config Manager for Model Trainer")
+      logger.info("Initialized Config Manager for Model Trainer")
 
-            # Initialize Model Trainer
-            model_trainer = ModelTrainer(config=config)
+      # Initialize Model Trainer
+      model_trainer = ModelTrainer(config=config)
 
-            # Split the DataFrame into features and target
-            X_all, y_all = model_trainer.split_data(df)
+      # Split the DataFrame into features and target
+      X_all, y_all = model_trainer.split_data(df)
 
-            # Split the data into training and testing sets
-            X_train, X_test, y_train, y_test = model_trainer.split_data_train__test(X_all, y_all)
+      # Split the data into training and testing sets
+      X_train, X_test, y_train, y_test = model_trainer.split_data_train__test(X_all, y_all)
 
-            # Log the training and testing data shapes
-            logger.info(f"Training data shape: {X_train.shape}, Testing data shape: {X_test.shape}")
-            logger.info(f"Training target shape: {y_train.shape}, Testing target shape: {y_test.shape}")
+      # Log the training and testing data shapes
+      logger.info(f"Training data shape: {X_train.shape}, Testing data shape: {X_test.shape}")
+      logger.info(f"Training target shape: {y_train.shape}, Testing target shape: {y_test.shape}")
 
-            # Encode the target variable
-            y_train_encoded, y_test_encoded = model_trainer.encode_variable(y_train, y_test)
+      # Encode the target variable
+      y_train_encoded, y_test_encoded = model_trainer.encode_variable(y_train, y_test)
 
-            # Set inference signature for the best model
-            signature = infer_signature(X_train, y_train_encoded)
+      # Set inference signature for the best model
+      signature = infer_signature(X_train, y_train_encoded)
 
-            # Set the MLFlow tracking URI and experiment name
-            if ml_flow_config['uri']:
-              mlflow.set_tracking_uri(ml_flow_config['uri'])
-              mlflow.set_experiment(ml_flow_config['experiment_name'])
-            else:
-              logger.warning("MLFlow tracking URI is not set, using default")
+      # Set the MLFlow tracking URI and experiment name
+      if ml_flow_config['uri']:
+        mlflow.set_tracking_uri(ml_flow_config['uri'])
+        mlflow.set_experiment(ml_flow_config['experiment_name'])
+      else:
+        logger.warning("MLFlow tracking URI is not set, using default")
 
-            with mlflow.start_run(run_name="Model_Testing"):
-              mlflow.log_param("model_name", config.model_name)
-              mlflow.log_param("train_data_path", config.train_data_path)
-              mlflow.log_param("target_column", config.target_column)
+      with mlflow.start_run(run_name="Model_Testing"):
+        mlflow.log_param("model_name", config.model_name)
+        mlflow.log_param("train_data_path", config.train_data_path)
+        mlflow.log_param("target_column", config.target_column)
 
-              # Make predictions on test data
-              y_test_pred = model.predict(X_test)
-              
-              # Find the F1 score of the best model
-              train_f1, train_accuracy = model_trainer.predict_labels(model, X_train, y_train_encoded)
-              test_f1, test_accuracy = model_trainer.predict_labels(model, X_test, y_test_encoded)
+        # Make predictions on test data
+        y_test_pred = model.predict(X_test)
+        
+        # Find the F1 score of the best model
+        train_f1, train_accuracy = model_trainer.predict_labels(model, X_train, y_train_encoded)
+        test_f1, test_accuracy = model_trainer.predict_labels(model, X_test, y_test_encoded)
 
-              logger.info(f"Train F1 Score: {train_f1}, Train Accuracy: {train_accuracy}")
-              logger.info(f"Test F1 Score: {test_f1}, Test Accuracy: {test_accuracy}")
+        logger.info(f"Train F1 Score: {train_f1}, Train Accuracy: {train_accuracy}")
+        logger.info(f"Test F1 Score: {test_f1}, Test Accuracy: {test_accuracy}")
 
-              # Mlflow metrics logging
-              mlflow.log_metric("train_f1_score", float(train_f1))
-              mlflow.log_metric("train_accuracy", float(train_accuracy))
-              mlflow.log_metric("test_f1_score", float(test_f1))
-              mlflow.log_metric("test_accuracy", float(test_accuracy))
+        # Mlflow metrics logging
+        mlflow.log_metric("train_f1_score", float(train_f1))
+        mlflow.log_metric("train_accuracy", float(train_accuracy))
+        mlflow.log_metric("test_f1_score", float(test_f1))
+        mlflow.log_metric("test_accuracy", float(test_accuracy))
 
-              logger.info("Model testing completed successfully")
+        logger.info("Model testing completed successfully")
 
-              # Generate confusion matrix and classification report
-              cm = confusion_matrix(y_test_encoded, y_test_pred)
-              cr = classification_report(y_test_encoded, y_test_pred)
+        # Generate confusion matrix and classification report
+        cm = confusion_matrix(y_test_encoded, y_test_pred)
+        cr = classification_report(y_test_encoded, y_test_pred)
 
-              logger.info(f"Confusion Matrix:\n{cm}")
-              logger.info(f"Classification Report:\n{cr}")
+        logger.info(f"Confusion Matrix:\n{cm}")
+        logger.info(f"Classification Report:\n{cr}")
 
-              # Log confusion matrix and classification report to MLFlow
-              mlflow.log_text(str(cm), "confusion_matrix.txt")
-              mlflow.log_text(str(cr), "classification_report.txt")
+        # Log confusion matrix and classification report to MLFlow
+        mlflow.log_text(str(cm), "confusion_matrix.txt")
+        mlflow.log_text(str(cr), "classification_report.txt")
 
-              # Log the Model Signature
-              mlflow.log_param("model_signature", str(signature))
+        # Log the Model Signature
+        mlflow.log_param("model_signature", str(signature))
 
-        except Exception as e:
-            logger.error(f"❌ Error loading model from MLFlow: {e}")
+    except Exception as e:
+      logger.error(f"❌ Error loading model from MLFlow: {e}")
 
   # Task Definition
-    load_model_and_test = load_model_from_mlflow_and_test()
+  load_model_and_test = load_model_from_mlflow_and_test()

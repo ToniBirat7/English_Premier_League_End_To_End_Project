@@ -589,6 +589,12 @@ Complete Web Application with React and Django.
 
 - Add Mariadb Services in the `docker-compose.yml` file.
 
+- Add Redis Services in the `docker-compose.yml` file.
+
+- Add MLflow Services in the `docker-compose.yml` file.
+
+- Host the MLflow server in DAGs Hub.
+
 ```yaml
 version: "3"
 services:
