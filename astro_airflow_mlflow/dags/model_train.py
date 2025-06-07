@@ -231,6 +231,7 @@ with DAG(
             logger.info("Logging visualizations to MLFlow")
 
             if ml_flow_config['uri']:
+                logger.info(f"✅ MLFlow tracking URI set to {ml_flow_config['uri']}")
                 mlflow.set_tracking_uri(ml_flow_config['uri'])
             else:
                 logger.warning("MLFlow tracking URI is not set, using default")
@@ -331,7 +332,6 @@ with DAG(
                 grid_search = model_trainer.hyperparameter_tuning(X_train, y_train_encoded, parameters)
 
                 mlflow.log_param("model_name", config.model_name)
-                mlflow.log_param("model_params", config.model_params)
                 mlflow.log_param("train_data_path", config.train_data_path)
                 mlflow.log_param("target_column", config.target_column)
 
@@ -376,11 +376,13 @@ with DAG(
 
                 # Log Model 
                 print(f"Using local file system for model logging...")
-                # sklearn.log_model(
-                #     sk_model=best_model,
-                #     artifact_path="model",
-                #     signature=signature
-                # )
+                sklearn.log_model(
+                    sk_model=best_model,
+                    artifact_path="model",
+                    signature=signature,
+                    registered_model_name='Best_XGBoost_Model',
+                    input_example=X_train.head(5).to_dict(orient='records')
+                )
                 logger.info("Model logged to MLFlow successfully")
 
                 # Save the best model to the specified path

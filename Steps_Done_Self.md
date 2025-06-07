@@ -526,13 +526,27 @@ main_mariadb_container_host=192.168.1.254
 
 ### **Fetch the Data for Model Training**
 
-- Check Redis Connection
+- Check Redis Connection : Done
 
 First, find all the Dependencies and Model Parameters (HyperParameter Tuning Ranges) that we will need for the model training.
 
 First, configure all the Entities, Configuration, and Pipeline files to fetch the data from the MariaDB database.
 
-- Then Visualize everything in the `MLFLow` as well.
+**Then Visualize everything in the `MLFLow` as well.**
+
+- Encountered, this issue ERROR - Failed to import Git (the Git executable is probably not on your PATH), so Git SHA is not available.
+  ERROR - All git commands will error until this is rectified.
+- Resolved by installing `git` in the Airflow container using the command `apt-get install git`. Updated the Dockerfile to include this installation step.
+
+Some Python code or library (likely in your Airflow DAGs or MLflow-related code) is trying to get the Git SHA using a command like git rev-parse HEAD, but can't find the Git binary.
+
+The PATH environment variable doesn't include Git, simply because Git isn't installed in the container at all.
+
+`apt-get install -y git` installs the Git CLI in your container.
+
+After installation, the Git executable `(/usr/bin/git)` becomes available on the system PATH for all users.
+
+So now when Python code tries to run a git command, it succeeds.
 
 - Store the Train, Test DataFrame in the Redis database for quick access.
 
@@ -543,6 +557,15 @@ First, configure all the Entities, Configuration, and Pipeline files to fetch th
 - Train the Model with the Parameters and Dependencies fetched from the MariaDB database.
 
 - Save the Best Model
+
+Start the MLflow server locally `mlflow server --host 0.0.0.0 --port 5000`
+
+Below should be the ENVs
+
+```bash
+MLFLOW_TRACKING_URI=http://192.168.1.79:5000/
+MLFLOW_EXPERIMENT_NAME=EPL_Experiment
+```
 
 ### **FAST API Model Access**
 
