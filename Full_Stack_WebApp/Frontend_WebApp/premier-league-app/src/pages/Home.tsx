@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Match, StatsOverview } from '../types';
 import { PremierLeagueAPI } from '../api';
-import MatchCard from '../components/MatchCard';
+import TestMatchCard from '../components/TestMatchCard';
 import './Home.css';
 
 const Home: React.FC = () => {

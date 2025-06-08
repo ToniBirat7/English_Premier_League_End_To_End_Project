@@ -68,7 +68,20 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <div className="team home-team">
           <div className="team-info">
             <span className="team-logo">{getTeamLogo(match.home_team)}</span>
-            <span className="team-name">{match.home_team}</span>
+            <div className="team-name-wrapper">
+              <span
+                className="team-name"
+                style={{
+                  display: "inline-block",
+                  whiteSpace: "nowrap",
+                  minWidth: "120px",
+                  width: "auto",
+                  overflow: "visible",
+                }}
+              >
+                {match.home_team}
+              </span>
+            </div>
           </div>
           <span className="team-score">{match.fthg}</span>
         </div>
@@ -84,7 +97,20 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <span className="team-score">{match.ftag}</span>
           <div className="team-info">
             <span className="team-logo">{getTeamLogo(match.away_team)}</span>
-            <span className="team-name">{match.away_team}</span>
+            <div className="team-name-wrapper">
+              <span
+                className="team-name"
+                style={{
+                  display: "inline-block",
+                  whiteSpace: "nowrap",
+                  minWidth: "120px",
+                  width: "auto",
+                  overflow: "visible",
+                }}
+              >
+                {match.away_team}
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -90,7 +90,8 @@
   align-items: center;
   gap: 0.75rem;
   flex: 1;
-  min-width: 0;
+  min-width: 250px !important;
+  width: auto !important;
 }
 
 .away-team {
@@ -103,7 +104,8 @@
   align-items: center;
   gap: 0.5rem;
   flex: 1;
-  min-width: 0;
+  min-width: 200px !important;
+  width: auto !important;
 }
 
 .away-team .team-info {
@@ -123,14 +125,72 @@
   flex-shrink: 0;
 }
 
-.team-name {
+/* Match Card specific team name styles with higher specificity */
+.match-card .team .team-info .team-name {
   font-weight: 600;
   color: #333;
   font-size: 0.9rem;
   flex: 1;
-  min-width: 0;
-  word-wrap: break-word;
+  min-width: 150px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
   line-height: 1.2;
+  display: block !important;
+  word-break: normal !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* Even more specific override to force proper display */
+.match-card .home-team .team-info .team-name,
+.match-card .away-team .team-info .team-name {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  direction: ltr !important;
+  unicode-bidi: normal !important;
+}
+
+.team-name-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 !important;
+  min-width: 120px !important;
+  overflow: visible !important;
+}
+
+/* CRITICAL: Complete text property reset for team names */
+.match-card .team-name-wrapper .team-name {
+  all: unset !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  font-size: 0.9rem !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+  line-height: 1.2 !important;
+  word-break: normal !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 120px !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  direction: ltr !important;
+  unicode-bidi: normal !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  text-align: left !important;
+  vertical-align: baseline !important;
+  word-wrap: normal !important;
+  hyphens: none !important;
+  text-indent: 0 !important;
+  text-shadow: none !important;
 }
 
 .team-score {
@@ -215,24 +275,24 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .match-card {
-    padding: 1rem;
+    padding: 1.5rem;
     min-height: 140px;
   }
 
-  .team-name {
-    font-size: 0.9rem;
-    max-width: 100px;
+  .match-card .team .team-info .team-name {
+    font-size: 0.85rem;
+    min-width: 80px;
+    white-space: nowrap;
   }
 
   .team-score {
-    font-size: 1.5rem;
-    padding: 0.25rem;
-    min-width: 35px;
+    font-size: 1.6rem;
+    padding: 0.3rem 0.5rem;
   }
 
   .team-logo {
-    width: 35px;
-    height: 35px;
+    width: 32px;
+    height: 32px;
     font-size: 1.2rem;
   }
 
@@ -244,47 +304,29 @@
 @media (max-width: 480px) {
   .match-card {
     padding: 1rem;
-    min-height: 140px;
+    min-height: 120px;
   }
 
   .match-content {
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
-  .team {
-    flex: 3;
-    min-width: 120px;
-  }
-
-  .team-info {
-    flex: 3;
-    min-width: 100px;
-  }
-
-  .team-name {
+  .match-card .team .team-info .team-name {
     font-size: 0.8rem;
-    max-width: 140px;
-    min-width: 80px;
+    min-width: 70px;
+    white-space: nowrap;
   }
 
   .team-score {
     font-size: 1.4rem;
-    padding: 0.3rem 0.2rem;
-    min-width: 32px;
-    width: 32px;
-    flex: 0 0 32px;
+    padding: 0.25rem 0.4rem;
+    min-width: 35px;
   }
 
   .team-logo {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     font-size: 1.1rem;
-    flex: 0 0 32px;
-  }
-
-  .match-separator {
-    min-width: 45px;
-    flex: 0 0 45px;
   }
 
   .vs {
@@ -293,32 +335,6 @@
   }
 
   .matchweek {
-    font-size: 0.75rem;
-  }
-}
-
-/* Better responsive adjustments for larger screens */
-@media (min-width: 1024px) {
-  .team-name {
-    max-width: 250px;
-    font-size: 1rem;
-  }
-}
-
-/* Enhanced tablet display */
-@media (max-width: 768px) and (min-width: 481px) {
-  .match-card {
-    min-height: 160px;
-    padding: 1.75rem;
-  }
-
-  .team-name {
-    max-width: 180px;
-    min-width: 100px;
-    font-size: 0.85rem;
-  }
-
-  .team-score {
-    font-size: 1.6rem;
+    font-size: 0.7rem;
   }
 }
