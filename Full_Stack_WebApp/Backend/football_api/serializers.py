@@ -38,6 +38,8 @@ class MatchSerializer(serializers.ModelSerializer):
 
 class MatchDetailSerializer(serializers.ModelSerializer):
     """Detailed match serializer with full team information"""
+    home_team = TeamSerializer(read_only=True)
+    away_team = TeamSerializer(read_only=True)
     result_display = serializers.ReadOnlyField()
 
     class Meta:

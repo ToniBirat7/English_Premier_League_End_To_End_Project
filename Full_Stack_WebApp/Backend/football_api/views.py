@@ -48,30 +48,39 @@ class TeamViewSet(viewsets.ReadOnlyModelViewSet):
         season = request.query_params.get('season', None)
         teams = self.get_queryset()
         
-        if season:
-            # Filter teams that played in the specified season
-            teams = teams.filter(
-                Q(home_matches__season=season) | Q(away_matches__season=season)
-            ).distinct()
-        
-        # Sort by points (descending), then goal difference, then goals for
+        # Calculate statistics for each team
         teams_data = []
         for team in teams:
+            # Calculate matches played - check if team has played in this season
+            matches_played = team.get_matches_played(season)
+            
+            # Only include teams that have played matches in the season
+            if season and matches_played == 0:
+                continue
+                
+            wins = team.get_wins(season)
+            draws = team.get_draws(season)
+            losses = team.get_losses(season)
+            goals_for = team.get_goals_for(season)
+            goals_against = team.get_goals_against(season)
+            goal_difference = goals_for - goals_against
+            points = team.get_points(season)
+            
             team_stats = {
                 'id': team.id,
                 'name': team.name,
-                'matches_played': team.matches_played,
-                'wins': team.wins,
-                'draws': team.draws,
-                'losses': team.losses,
-                'goals_for': team.goals_for,
-                'goals_against': team.goals_against,
-                'goal_difference': team.goal_difference,
-                'points': team.points,
+                'matches_played': matches_played,
+                'wins': wins,
+                'draws': draws,
+                'losses': losses,
+                'goals_for': goals_for,
+                'goals_against': goals_against,
+                'goal_difference': goal_difference,
+                'points': points,
             }
             teams_data.append(team_stats)
         
-        # Sort by points, goal difference, goals for
+        # Sort by points (descending), then goal difference, then goals for
         teams_data.sort(
             key=lambda x: (-x['points'], -x['goal_difference'], -x['goals_for'])
         )
@@ -87,7 +96,7 @@ class TeamViewSet(viewsets.ReadOnlyModelViewSet):
         """Get all matches for a specific team"""
         team = self.get_object()
         matches = Match.objects.filter(
-            Q(home_team=team) | Q(away_team=team)
+            Q(home_team=team.name) | Q(away_team=team.name)
         ).order_by('-date')
         
         # Apply season filter if provided
