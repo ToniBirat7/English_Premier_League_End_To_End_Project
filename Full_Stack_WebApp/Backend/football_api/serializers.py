@@ -25,15 +25,12 @@ class TeamSerializer(serializers.ModelSerializer):
 
 class MatchSerializer(serializers.ModelSerializer):
     """Serializer for Match model with team details"""
-    home_team_name = serializers.CharField(source='home_team.name', read_only=True)
-    away_team_name = serializers.CharField(source='away_team.name', read_only=True)
     result_display = serializers.ReadOnlyField()
 
     class Meta:
         model = Match
         fields = [
             'id', 'date', 'home_team', 'away_team', 
-            'home_team_name', 'away_team_name',
             'fthg', 'ftag', 'ftr', 'result_display',
             'season', 'matchweek'
         ]
@@ -41,8 +38,6 @@ class MatchSerializer(serializers.ModelSerializer):
 
 class MatchDetailSerializer(serializers.ModelSerializer):
     """Detailed match serializer with full team information"""
-    home_team = TeamSerializer(read_only=True)
-    away_team = TeamSerializer(read_only=True)
     result_display = serializers.ReadOnlyField()
 
     class Meta:

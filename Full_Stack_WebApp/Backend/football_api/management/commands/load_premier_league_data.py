@@ -73,17 +73,43 @@ class Command(BaseCommand):
                     away_team_name = row['AwayTeam'].strip()
                     
                     # Create teams if they don't exist (for the Team model)
+                    def get_short_name(team_name):
+                        """Generate a unique short name for teams"""
+                        short_name_map = {
+                            'Man City': 'MCI',
+                            'Man United': 'MUN',
+                            'Arsenal': 'ARS',
+                            'Chelsea': 'CHE',
+                            'Liverpool': 'LIV',
+                            'Tottenham': 'TOT',
+                            'West Ham': 'WHU',
+                            'Leicester City': 'LEI',
+                            'Brighton': 'BHA',
+                            'Newcastle': 'NEW',
+                            'Aston Villa': 'AVL',
+                            'Crystal Palace': 'CRY',
+                            'Everton': 'EVE',
+                            'Wolves': 'WOL',
+                            'Nottingham Forest': 'NFO',
+                            'Bournemouth': 'BOU',
+                            'Southampton': 'SOU',
+                            'Brentford': 'BRE',
+                            'Fulham': 'FUL',
+                            'Ipswich Town': 'IPS',
+                        }
+                        return short_name_map.get(team_name, team_name[:3].upper())
+                    
                     if home_team_name not in teams_created:
                         Team.objects.get_or_create(
                             name=home_team_name,
-                            defaults={'short_name': home_team_name[:3].upper()}
+                            defaults={'short_name': get_short_name(home_team_name)}
                         )
                         teams_created.add(home_team_name)
                     
                     if away_team_name not in teams_created:
                         Team.objects.get_or_create(
                             name=away_team_name,
-                            defaults={'short_name': away_team_name[:3].upper()}
+                            defaults={'short_name': get_short_name(away_team_name)}
                         )
                         teams_created.add(away_team_name)
                     
@@ -125,14 +151,12 @@ class Command(BaseCommand):
                     if created:
                         matches_created += 1
                     
-                    matches_created += 1
-                    
                     if matches_created % 100 == 0:
                         self.stdout.write(f'Processed {matches_created} matches...')
                 
                 except Exception as e:
                     self.stdout.write(
-                        self.style.ERROR(f'Error processing row: {row}')
+                        self.style.WARNING(f'Error processing row: {row.get("Date", "Unknown")} - {row.get("HomeTeam", "")} vs {row.get("AwayTeam", "")}')
                     )
                     self.stdout.write(self.style.ERROR(f'Error: {str(e)}'))
                     continue
