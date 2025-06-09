@@ -74,6 +74,16 @@ class Match(models.Model):
     @property
     def total_goals(self):
         return self.fthg + self.ftag
+    
+    @property
+    def result_display(self):
+        """Return a human-readable result description"""
+        if self.ftr == 'H':
+            return f"{self.home_team} {self.fthg}-{self.ftag} {self.away_team} (Home Win)"
+        elif self.ftr == 'A':
+            return f"{self.home_team} {self.fthg}-{self.ftag} {self.away_team} (Away Win)"
+        else:
+            return f"{self.home_team} {self.fthg}-{self.ftag} {self.away_team} (Draw)"
 
 
 class Team(models.Model):
