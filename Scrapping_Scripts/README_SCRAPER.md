@@ -399,7 +399,7 @@ The scraper includes comprehensive data validation:
 
 ### Manual Validation Commands
 ```bash
-# Verify season completeness
+# Verify season completeness  
 PGPASSWORD=postgres psql -h localhost -p 5434 -U postgres -d weekly_scrapped_data -c "
 SELECT 
     season,

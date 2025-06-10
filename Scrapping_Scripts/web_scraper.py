@@ -43,7 +43,11 @@ class PremierLeagueWebScraper:
     Web scraper for Premier League match data from the full-stack application
     """
     
-    def __init__(self, base_url: str = "http://localhost:3000", api_url: str = "http://localhost:8000/api"):
+    def __init__(self, base_url: str = "http://localhost:3000", api_url: str = "http://localhost:8000/api",
+                 db_name: str = "weekly_scrapped_data", db_table: str = "PREMIER_LEAGUE_MATCHES_3"):
+        """
+        Initialize the scraper with base URL, API URL, and database configuration
+        """
         self.base_url = base_url
         self.api_url = api_url
         self.session = requests.Session()
@@ -67,7 +71,7 @@ class PremierLeagueWebScraper:
             'password': 'postgres',
             'database': 'weekly_scrapped_data'
         }
-        self.table_name = "PREMIER_LEAGUE_MATCHES"
+        self.table_name = db_table
         
     def setup_database(self):
         """
@@ -212,76 +216,68 @@ class PremierLeagueWebScraper:
             logger.error(f"API request failed: {e}")
             return []
     
-    def generate_extended_match_data(self, match: Dict) -> Dict:
+    def fetch_match_detail_from_api(self, match: Dict) -> Dict:
         """
-        Generate realistic extended match statistics based on basic match data
-        This simulates the detailed statistics that would come from a real sports API
+        Fetch detailed match statistics from the backend API match_detail endpoint
         """
-        home_goals = match.get('fthg', 0)
-        away_goals = match.get('ftag', 0)
+        match_id = match.get('id')
+        if not match_id:
+            logger.warning(f"No match ID found for match {match.get('home_team')} vs {match.get('away_team')}")
+            return None
         
-        # Generate realistic possession (should add up to ~100%)
-        home_possession = random.randint(35, 65)
-        away_possession = 100 - home_possession
-        
-        # Generate shots based on goals and possession
-        base_shots_home = max(8, home_goals * 3 + random.randint(2, 8))
-        base_shots_away = max(8, away_goals * 3 + random.randint(2, 8))
-        
-        # Adjust shots based on possession
-        possession_factor = home_possession / 50.0
-        home_shots = int(base_shots_home * possession_factor)
-        away_shots = int(base_shots_away * (2 - possession_factor))
-        
-        # Shots on target (usually 25-40% of total shots, but at least equal to goals)
-        home_shots_on_target = max(home_goals, int(home_shots * random.uniform(0.25, 0.4)))
-        away_shots_on_target = max(away_goals, int(away_shots * random.uniform(0.25, 0.4)))
-        
-        # Corners (typically 4-12 per team)
-        home_corners = random.randint(4, 12)
-        away_corners = random.randint(4, 12)
-        
-        # Fouls (typically 8-20 per team)
-        home_fouls = random.randint(8, 20)
-        away_fouls = random.randint(8, 20)
-        
-        # Yellow cards (0-4 per team, related to fouls)
-        home_yellows = min(4, int(home_fouls / 5) + random.randint(0, 2))
-        away_yellows = min(4, int(away_fouls / 5) + random.randint(0, 2))
-        
-        # Red cards (rare, 0-1 per team)
-        home_reds = 1 if random.random() < 0.05 else 0
-        away_reds = 1 if random.random() < 0.05 else 0
-        
-        extended_data = {
-            # Original data - using correct field names from API
-            'DT': match.get('date'),
-            'HT': match.get('home_team', ''),
-            'AT': match.get('away_team', ''),
-            'FTHG': home_goals,
-            'FTAG': away_goals,
-            'FTR': match.get('ftr', ''),
-            'MW': match.get('matchweek', 1),
-            'SEASON': match.get('season', self.current_season),
+        try:
+            # Call the match_detail API endpoint
+            url = f"{self.api_url}/matches/match_detail/"
+            params = {'match_id': match_id}
             
-            # Extended statistics
-            'HP': home_possession,
-            'AP': away_possession,
-            'HS': home_shots,
-            'AS_': away_shots,
-            'HST': home_shots_on_target,
-            'AST': away_shots_on_target,
-            'HC': home_corners,
-            'AC': away_corners,
-            'HF': home_fouls,
-            'AF': away_fouls,
-            'HY': home_yellows,
-            'AY': away_yellows,
-            'HR': home_reds,
-            'AR': away_reds,
-        }
-        
-        return extended_data
+            logger.debug(f"Fetching match details for match ID {match_id} from: {url}")
+            response = self.session.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extract match and statistics data
+            match_data = data.get('match', {})
+            statistics = data.get('statistics', {})
+            
+            # Map API response to our database schema
+            extended_data = {
+                # Basic match data
+                'DT': match_data.get('date') or match.get('date'),
+                'HT': match_data.get('home_team_name') or match.get('home_team', ''),
+                'AT': match_data.get('away_team_name') or match.get('away_team', ''),
+                'FTHG': match_data.get('fthg') or match.get('fthg', 0),
+                'FTAG': match_data.get('ftag') or match.get('ftag', 0),
+                'FTR': match_data.get('ftr') or match.get('ftr', ''),
+                'MW': match_data.get('matchweek') or match.get('matchweek', 1),
+                'SEASON': match_data.get('season') or match.get('season', self.current_season),
+                
+                # Extended statistics from API
+                'HP': statistics.get('possession', {}).get('home', 0),
+                'AP': statistics.get('possession', {}).get('away', 0),
+                'HS': statistics.get('shots', {}).get('home', 0),
+                'AS_': statistics.get('shots', {}).get('away', 0),
+                'HST': statistics.get('shots_on_target', {}).get('home', 0),
+                'AST': statistics.get('shots_on_target', {}).get('away', 0),
+                'HC': statistics.get('corners', {}).get('home', 0),
+                'AC': statistics.get('corners', {}).get('away', 0),
+                'HF': statistics.get('fouls', {}).get('home', 0),
+                'AF': statistics.get('fouls', {}).get('away', 0),
+                'HY': statistics.get('yellow_cards', {}).get('home', 0),
+                'AY': statistics.get('yellow_cards', {}).get('away', 0),
+                'HR': statistics.get('red_cards', {}).get('home', 0),
+                'AR': statistics.get('red_cards', {}).get('away', 0),
+            }
+            
+            logger.debug(f"Successfully fetched match details for {extended_data['HT']} vs {extended_data['AT']}")
+            return extended_data
+            
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch match details for match ID {match_id}: {e}")
+            return None
+        except (KeyError, ValueError) as e:
+            logger.error(f"Error parsing match detail response for match ID {match_id}: {e}")
+            return None
     
     def scrape_season_data(self, season: str = None) -> List[Dict]:
         """
@@ -297,14 +293,16 @@ class PremierLeagueWebScraper:
         
         if not basic_matches:
             logger.warning("No matches found from API, generating sample data for 2024-25 season")
-            basic_matches = self.generate_sample_season_data()
         
-        # Generate extended statistics for each match
+        # Fetch extended statistics for each match from API
         extended_matches = []
         for match in basic_matches:
             try:
-                extended_match = self.generate_extended_match_data(match)
-                extended_matches.append(extended_match)
+                extended_match = self.fetch_match_detail_from_api(match)
+                if extended_match:
+                    extended_matches.append(extended_match)
+                else:
+                    logger.warning(f"Failed to fetch extended data for match {match.get('id', 'unknown')}")
                 
                 # Add small delay to be respectful
                 time.sleep(0.1)
@@ -315,69 +313,6 @@ class PremierLeagueWebScraper:
         
         logger.info(f"Successfully processed {len(extended_matches)} matches")
         return extended_matches
-    
-    def generate_sample_season_data(self) -> List[Dict]:
-        """
-        Generate sample 2024-25 season data for demonstration
-        """
-        logger.info("Generating sample 2024-25 season data...")
-        
-        # Premier League teams for 2024-25 season
-        teams = [
-            "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
-            "Chelsea", "Crystal Palace", "Everton", "Fulham", "Ipswich Town",
-            "Leicester City", "Liverpool", "Manchester City", "Manchester United",
-            "Newcastle United", "Nottingham Forest", "Southampton", "Tottenham",
-            "West Ham United", "Wolverhampton"
-        ]
-        
-        matches = []
-        match_id = 1
-        
-        # Generate matches for 38 matchweeks
-        for matchweek in range(1, 39):
-            # Each matchweek has 10 matches (20 teams = 10 matches per week)
-            teams_copy = teams.copy()
-            random.shuffle(teams_copy)
-            
-            for i in range(0, len(teams_copy), 2):
-                if i + 1 < len(teams_copy):
-                    home_team = teams_copy[i]
-                    away_team = teams_copy[i + 1]
-                    
-                    # Generate realistic match result
-                    home_goals = random.choices([0, 1, 2, 3, 4], weights=[15, 35, 30, 15, 5])[0]
-                    away_goals = random.choices([0, 1, 2, 3, 4], weights=[20, 35, 30, 12, 3])[0]
-                    
-                    if home_goals > away_goals:
-                        result = 'H'
-                    elif away_goals > home_goals:
-                        result = 'A'
-                    else:
-                        result = 'D'
-                    
-                    # Generate match date (assuming season starts in August)
-                    import datetime
-                    season_start = datetime.date(2024, 8, 17)  # Typical PL season start
-                    match_date = season_start + datetime.timedelta(weeks=matchweek-1, days=random.randint(0, 6))
-                    
-                    match = {
-                        'id': match_id,
-                        'date': match_date.strftime('%Y-%m-%d'),
-                        'home_team': home_team,
-                        'away_team': away_team,
-                        'fthg': home_goals,
-                        'ftag': away_goals,
-                        'ftr': result,
-                        'season': self.current_season,
-                        'matchweek': matchweek
-                    }
-                    
-                    matches.append(match)
-                    match_id += 1
-        
-        logger.info(f"Generated {len(matches)} sample matches for {self.current_season} season")
-        return matches
     
     def save_to_database(self, matches: List[Dict]):
         """

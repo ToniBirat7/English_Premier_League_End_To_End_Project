@@ -625,3 +625,17 @@ services:
 toni-birat@tonibirat:~$ docker run --name epl_postgres -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=epl_scrapped   -p 5434:5432   -d postgres:15-alpine
 ```
 
+We will be scarpping the data from the `http://localhost:8000/api` backend API and storing it in the PostgreSQL database.
+
+Our database name is `weekly_scrapped_data` and the table name should be dynamically passed to the scrapping method when executing the DAG. The format for the table name should be `scrapped_data_<date>` where `<date>` is the current date in the format `YYYYMMDD`.
+
+The name of the docker container is `epl_postgres`, and it is running on port `5434`. The database user is `postgres`, the password is `postgres`, and the database name is `epl_scrapped`.
+
+We will use the `Ariflow` `PostgresOperator` to execute the SQL commands to create the table and insert the data into the table.
+We will also use the `PostgresHook` to connect to the PostgreSQL database and execute the SQL commands.
+
+We will import these creds from the `.env` file or pass them as environment variables when running the container.
+
+Then, we will modify our pipeline as planned. Before we were using `csv` for ingestion. Now, we will load the scrapped from the `POSTGRES` database and then store it in the MariaDB database after cleaning.
+
+Then again load for transformation and save in the MariaDb, finally load the data in the Redis database for quick access.
