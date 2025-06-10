@@ -236,7 +236,7 @@ interface LeagueTableProps {
   season?: string;
 }
 
-const LeagueTable: React.FC<LeagueTableProps> = ({ season = "2023-24" }) => {
+const LeagueTable: React.FC<LeagueTableProps> = ({ season = "2024-25" }) => {
   const [standings, setStandings] = useState<StandingsTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ALL");
@@ -282,7 +282,7 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ season = "2023-24" }) => {
         <StandingsTitle>
           <LeagueLogo>🏴󠁧󠁢󠁥󠁮󠁧󠁿</LeagueLogo>
           <TitleText>
-            <LeagueName>Premier League 2024/2025</LeagueName>
+            <LeagueName>Premier League {season}</LeagueName>
             <SeasonInfo>🇬🇧 England • 16 Aug • 25 May</SeasonInfo>
           </TitleText>
         </StandingsTitle>

@@ -228,7 +228,7 @@ interface MatchesProps {
   team?: string;
 }
 
-const Matches: React.FC<MatchesProps> = ({ season = "2023-24", team }) => {
+const Matches: React.FC<MatchesProps> = ({ season = "2024-25", team }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
