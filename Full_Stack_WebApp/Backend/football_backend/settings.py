@@ -77,7 +77,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'football_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -91,7 +90,6 @@ DATABASES = {
         'PORT': '5434',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

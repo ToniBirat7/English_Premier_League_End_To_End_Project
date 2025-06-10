@@ -1,4 +1,0 @@
-Data ingestion is the process of bringing data from various sources into the system for further processing,
-storage, and analysis. In this project, the ingestion process marks the beginning of the MLOps pipeline and
-plays a critical role in ensuring the quality and structure of data used for training machine learning models and
-conducting analytical tasks.

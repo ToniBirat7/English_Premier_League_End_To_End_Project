@@ -1,0 +1,9 @@
+# Web Scraper Requirements
+# =========================
+
+# Core scraping and HTTP libraries
+requests>=2.28.0
+urllib3>=1.26.0
+
+# Database
+psycopg2-binary>=2.9.5  # PostgreSQL adapter
