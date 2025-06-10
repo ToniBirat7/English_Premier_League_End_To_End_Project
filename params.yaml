@@ -1,5 +1,0 @@
-# Parameters for the project
-
-ElasticNet:
-  alpha: 0.2
-  l1_ratio: 0.1
