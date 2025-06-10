@@ -183,3 +183,56 @@ class MatchViewSet(viewsets.ReadOnlyModelViewSet):
             )
         
         return Response(stats)
+
+    @action(detail=False, methods=['get'])
+    def seasons(self, request):
+        """Get available seasons"""
+        seasons = Match.objects.values_list('season', flat=True).distinct().order_by('season')
+        return Response(list(seasons))
+    
+    @action(detail=False, methods=['get'])
+    def match_detail(self, request):
+        """Get detailed match information with statistics"""
+        match_id = request.query_params.get('match_id')
+        if not match_id:
+            return Response({'error': 'match_id parameter required'}, status=400)
+        
+        try:
+            match = Match.objects.get(id=match_id)
+            # Calculate some basic match statistics
+            match_stats = {
+                'match': MatchDetailSerializer(match).data,
+                'statistics': {
+                    'possession': {
+                        'home': 55,  # Mock data - can be enhanced with real data
+                        'away': 45
+                    },
+                    'shots': {
+                        'home': match.fthg * 3 + 2,  # Mock calculation
+                        'away': match.ftag * 3 + 2
+                    },
+                    'shots_on_target': {
+                        'home': match.fthg + 1,
+                        'away': match.ftag + 1
+                    },
+                    'corners': {
+                        'home': match.fthg * 2 + 3,
+                        'away': match.ftag * 2 + 3
+                    },
+                    'fouls': {
+                        'home': 12,
+                        'away': 14
+                    },
+                    'yellow_cards': {
+                        'home': 2,
+                        'away': 3
+                    },
+                    'red_cards': {
+                        'home': 0,
+                        'away': 0
+                    }
+                }
+            }
+            return Response(match_stats)
+        except Match.DoesNotExist:
+            return Response({'error': 'Match not found'}, status=404)
