@@ -32,6 +32,18 @@ export interface Match {
   matchweek: number;
 }
 
+export interface DetailedMatch {
+  id: number;
+  date: string;
+  home_team_name: string;
+  away_team_name: string;
+  fthg: number;
+  ftag: number;
+  ftr: string;
+  season: string;
+  matchweek: number;
+}
+
 export interface StandingsTeam extends Team {
   matches_played: number;
   wins: number;
@@ -42,6 +54,21 @@ export interface StandingsTeam extends Team {
   goal_difference: number;
   points: number;
   position: number;
+}
+
+export interface MatchStatistics {
+  possession: { home: number; away: number };
+  shots: { home: number; away: number };
+  shots_on_target: { home: number; away: number };
+  corners: { home: number; away: number };
+  fouls: { home: number; away: number };
+  yellow_cards: { home: number; away: number };
+  red_cards: { home: number; away: number };
+}
+
+export interface MatchDetails {
+  match: DetailedMatch;
+  statistics: MatchStatistics;
 }
 
 export interface ApiResponse<T> {
@@ -75,6 +102,12 @@ export const teamsApi = {
     const response = await api.get(`/teams/${teamId}/matches/`, { params });
     return response.data;
   },
+
+  // Get available seasons
+  getSeasons: async (): Promise<string[]> => {
+    const response = await api.get("/matches/seasons/");
+    return response.data;
+  },
 };
 
 export const matchesApi = {
@@ -96,6 +129,14 @@ export const matchesApi = {
   // Get recent matches
   getRecentMatches: async (): Promise<Match[]> => {
     const response = await api.get("/matches/recent/");
+    return response.data;
+  },
+
+  // Get match details with statistics
+  getMatchDetails: async (matchId: number): Promise<MatchDetails> => {
+    const response = await api.get("/matches/match_detail/", {
+      params: { match_id: matchId },
+    });
     return response.data;
   },
 };

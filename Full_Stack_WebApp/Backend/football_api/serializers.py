@@ -38,14 +38,14 @@ class MatchSerializer(serializers.ModelSerializer):
 
 class MatchDetailSerializer(serializers.ModelSerializer):
     """Detailed match serializer with full team information"""
-    home_team = TeamSerializer(read_only=True)
-    away_team = TeamSerializer(read_only=True)
+    home_team_name = serializers.CharField(source='home_team', read_only=True)
+    away_team_name = serializers.CharField(source='away_team', read_only=True)
     result_display = serializers.ReadOnlyField()
 
     class Meta:
         model = Match
         fields = [
-            'id', 'date', 'home_team', 'away_team',
+            'id', 'date', 'home_team_name', 'away_team_name',
             'fthg', 'ftag', 'ftr', 'result_display',
             'season', 'matchweek'
         ]

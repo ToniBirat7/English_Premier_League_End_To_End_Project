@@ -5,6 +5,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import HomePage from "../pages/HomePage";
 import PremierLeaguePage from "../pages/PremierLeaguePage";
+import MatchDetailPage from "../pages/MatchDetailPage";
 import { theme } from "../styles/GlobalStyles";
 
 const LayoutContainer = styled.div`
@@ -38,6 +39,7 @@ const Layout: React.FC<LayoutProps> = () => {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/premier-league" element={<PremierLeaguePage />} />
+              <Route path="/match/:matchId" element={<MatchDetailPage />} />
               <Route
                 path="/champions-league"
                 element={<div>Champions League coming soon...</div>}

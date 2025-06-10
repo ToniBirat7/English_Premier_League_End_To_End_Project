@@ -8,14 +8,15 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #1a1a1a;
+    background: linear-gradient(135deg, #0f0f14 0%, #1a1a24 100%);
     color: #ffffff;
     line-height: 1.6;
+    min-height: 100vh;
   }
 
   code {
@@ -42,30 +43,46 @@ export const GlobalStyle = createGlobalStyle`
 // SofaScore Theme Colors
 export const theme = {
   colors: {
-    // Background colors
-    primary: "#1a1a1a", // Main dark background
-    secondary: "#2d2d2d", // Card/section background
-    tertiary: "#3a3a3a", // Hover states
+    // Enhanced background colors with better contrast
+    primary: "#0f0f14", // Deep dark primary
+    secondary: "#1e1e28", // Rich dark secondary
+    tertiary: "#2a2a3a", // Elevated surfaces
+    quaternary: "#363648", // Hover states
 
-    // Accent colors
-    purple: "#8b5cf6", // Primary purple
-    purpleLight: "#a78bfa", // Light purple
-    purpleDark: "#7c3aed", // Dark purple
+    // Accent colors - more vibrant
+    purple: "#7c3aed", // Primary purple
+    purpleLight: "#a855f7", // Light purple
+    purpleDark: "#6d28d9", // Dark purple
+    purpleGlow: "#8b5cf6", // Glowing purple
 
-    // Status colors
-    green: "#22c55e", // Win/positive
-    red: "#ef4444", // Loss/negative
-    yellow: "#eab308", // Draw/warning
-    blue: "#3b82f6", // Info/neutral
+    // Status colors - enhanced
+    green: "#10b981", // Success/win
+    greenLight: "#34d399", // Light green
+    red: "#ef4444", // Error/loss
+    redLight: "#f87171", // Light red
+    yellow: "#f59e0b", // Warning/draw
+    yellowLight: "#fbbf24", // Light yellow
+    blue: "#3b82f6", // Info
+    blueLight: "#60a5fa", // Light blue
 
-    // Text colors
-    textPrimary: "#ffffff", // Main text
-    textSecondary: "#a1a1aa", // Secondary text
-    textTertiary: "#71717a", // Muted text
+    // Text colors - improved hierarchy
+    textPrimary: "#ffffff", // Primary text
+    textSecondary: "#d1d5db", // Secondary text
+    textTertiary: "#9ca3af", // Muted text
+    textQuaternary: "#6b7280", // Very muted text
 
-    // Border colors
-    border: "#404040", // Default borders
-    borderLight: "#525252", // Light borders
+    // Border colors - enhanced depth
+    border: "#374151", // Default borders
+    borderLight: "#4b5563", // Light borders
+    borderAccent: "#7c3aed", // Accent borders
+
+    // Special effects
+    gradient: {
+      primary: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #8b5cf6 100%)",
+      secondary: "linear-gradient(135deg, #1e1e28 0%, #2a2a3a 100%)",
+      success: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+      danger: "linear-gradient(135deg, #ef4444 0%, #f87171 100%)",
+    },
   },
 
   breakpoints: {

@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { theme, Card, Text, Flex, Button } from "../styles/GlobalStyles";
 import LeagueTable from "../components/LeagueTable";
 import Matches from "../components/Matches";
+import SeasonSelector from "../components/SeasonSelector";
 
 const PremierLeagueContainer = styled.div`
   display: flex;
@@ -62,6 +63,13 @@ const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.sm};
+`;
+
+const HeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.md};
+  margin-top: ${theme.spacing.md};
 `;
 
 const TabsContainer = styled.div`
@@ -238,6 +246,7 @@ interface PremierLeaguePageProps {}
 
 const PremierLeaguePage: React.FC<PremierLeaguePageProps> = () => {
   const [activeTab, setActiveTab] = useState("Standings");
+  const [selectedSeason, setSelectedSeason] = useState("2024-25");
 
   const tabs = ["Standings", "Fixtures", "Statistics", "Commentary", "Teams"];
 
@@ -293,7 +302,7 @@ const PremierLeaguePage: React.FC<PremierLeaguePageProps> = () => {
         <HeaderContent>
           <LeagueLogo>🏴󠁧󠁢󠁥󠁮󠁧󠁿</LeagueLogo>
           <HeaderInfo>
-            <LeagueTitle>Premier League 2024/2025</LeagueTitle>
+            <LeagueTitle>Premier League {selectedSeason}</LeagueTitle>
             <LeagueSubtitle>🇬🇧 England • 16 Aug • 25 May</LeagueSubtitle>
             <SeasonInfo>
               <InfoItem>
@@ -309,6 +318,12 @@ const PremierLeaguePage: React.FC<PremierLeaguePageProps> = () => {
                 <span>Matchweek 38</span>
               </InfoItem>
             </SeasonInfo>
+            <HeaderControls>
+              <SeasonSelector
+                selectedSeason={selectedSeason}
+                onSeasonChange={setSelectedSeason}
+              />
+            </HeaderControls>
           </HeaderInfo>
         </HeaderContent>
       </PageHeader>
@@ -327,8 +342,8 @@ const PremierLeaguePage: React.FC<PremierLeaguePageProps> = () => {
 
       <ContentContainer>
         <MainContent>
-          {activeTab === "Standings" && <LeagueTable season="2023-24" />}
-          {activeTab === "Fixtures" && <Matches season="2023-24" />}
+          {activeTab === "Standings" && <LeagueTable season={selectedSeason} />}
+          {activeTab === "Fixtures" && <Matches season={selectedSeason} />}
           {activeTab === "Statistics" && (
             <StatsCard>
               <Text

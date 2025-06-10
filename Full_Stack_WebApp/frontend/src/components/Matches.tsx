@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { matchesApi, Match, formatDate, formatTime } from "../services/api";
-import { theme, Card, Text, Flex, Button } from "../styles/GlobalStyles";
+import { useNavigate } from "react-router-dom";
+import { matchesApi, Match, formatTime } from "../services/api";
+import { theme, Card } from "../styles/GlobalStyles";
 
 const MatchesContainer = styled(Card)`
   background: ${theme.colors.secondary};
@@ -41,7 +42,6 @@ const FilterTab = styled.button<{ active?: boolean }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-
   &:hover {
     color: ${(props) => (props.active ? "white" : theme.colors.textPrimary)};
   }
@@ -232,18 +232,48 @@ const Matches: React.FC<MatchesProps> = ({ season = "2023-24", team }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
-  const [currentRound, setCurrentRound] = useState(38);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [roundDate, setRoundDate] = useState<string>("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const data = await matchesApi.getMatches(1, season, team);
+        // Fetch all matches for the season (not just page 1)
+        const allMatches: Match[] = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const data = await matchesApi.getMatches(page, season, team);
+          allMatches.push(...data.results);
+          hasMore = data.next !== null;
+          page++;
+        }
+
         // Filter matches for the current round
-        const roundMatches = data.results.filter(
+        const roundMatches = allMatches.filter(
           (match) => match.matchweek === currentRound
         );
         setMatches(roundMatches);
+
+        // Set round date based on the first match in the round or season
+        if (roundMatches.length > 0) {
+          const firstMatch = roundMatches[0];
+          const matchDate = new Date(firstMatch.date);
+          const dateStr = matchDate.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const timeStr = formatTime(firstMatch.date);
+          setRoundDate(`${dateStr} • ${timeStr}`);
+        } else {
+          // Fallback: estimate date based on season and round
+          const estimatedDate = getEstimatedRoundDate(season, currentRound);
+          setRoundDate(`${estimatedDate} • 15:00`);
+        }
       } catch (error) {
         console.error("Error fetching matches:", error);
       } finally {
@@ -283,6 +313,22 @@ const Matches: React.FC<MatchesProps> = ({ season = "2023-24", team }) => {
     return "Finished";
   };
 
+  const getEstimatedRoundDate = (season: string, round: number): string => {
+    // Estimate date based on season and round
+    const seasonStartYear = parseInt(season.split("-")[0]);
+    const seasonStartDate = new Date(seasonStartYear, 7, 15); // August 15th as rough season start
+
+    // Each round is approximately 1 week apart
+    const estimatedDate = new Date(seasonStartDate);
+    estimatedDate.setDate(estimatedDate.getDate() + (round - 1) * 7);
+
+    return estimatedDate.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   if (loading) {
     return (
       <MatchesContainer>
@@ -318,7 +364,7 @@ const Matches: React.FC<MatchesProps> = ({ season = "2023-24", team }) => {
         </RoundButton>
         <RoundInfo>
           <RoundTitle>Round {currentRound}</RoundTitle>
-          <RoundDate>25/05/2025 • 20:45</RoundDate>
+          <RoundDate>{roundDate}</RoundDate>
         </RoundInfo>
         <RoundButton
           onClick={() => setCurrentRound(Math.min(38, currentRound + 1))}
@@ -334,7 +380,10 @@ const Matches: React.FC<MatchesProps> = ({ season = "2023-24", team }) => {
           </LoadingContainer>
         ) : (
           matches.map((match) => (
-            <MatchItem key={match.id}>
+            <MatchItem
+              key={match.id}
+              onClick={() => navigate(`/match/${match.id}`)}
+            >
               <MatchTime>
                 <TimeText>{formatTime(match.date)}</TimeText>
                 <StatusText>FT</StatusText>
