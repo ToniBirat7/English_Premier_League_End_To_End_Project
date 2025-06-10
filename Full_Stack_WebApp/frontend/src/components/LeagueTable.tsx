@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 import { teamsApi, StandingsTeam } from "../services/api";
-import { theme, Card, Text, Flex } from "../styles/GlobalStyles";
+import { theme, Card, Text } from "../styles/GlobalStyles";
+
+// Define keyframes outside of styled components
+const underlineAnimation = keyframes`
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+`;
+
+const slideInAnimation = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const StandingsContainer = styled(Card)`
   background: ${theme.colors.secondary};
@@ -59,7 +76,9 @@ const TabsContainer = styled.div`
   border-bottom: 1px solid ${theme.colors.border};
 `;
 
-const Tab = styled.button<{ active?: boolean }>`
+const Tab = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== "active",
+})<{ active?: boolean }>`
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   background: transparent;
   border: none;
@@ -69,24 +88,54 @@ const Tab = styled.button<{ active?: boolean }>`
   font-weight: 500;
   cursor: pointer;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    background: rgba(139, 92, 246, 0.1);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+  }
 
   &:hover {
     color: ${theme.colors.textPrimary};
+    transform: translateY(-1px);
+
+    &::before {
+      width: 100%;
+    }
   }
 
   ${(props) =>
     props.active &&
-    `
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: ${theme.colors.purple};
-    }
-  `}
+    css`
+      color: ${theme.colors.purple};
+
+      &::before {
+        width: 100%;
+        background: rgba(139, 92, 246, 0.15);
+      }
+
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          ${theme.colors.purple},
+          ${theme.colors.blue}
+        );
+        animation: ${underlineAnimation} 0.3s ease-out;
+      }
+    `}
 `;
 
 const TableContainer = styled.div`
@@ -127,18 +176,72 @@ const TableBody = styled.tbody``;
 
 const TableRow = styled.tr<{ position?: number }>`
   border-bottom: 1px solid ${theme.colors.border};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(139, 92, 246, 0.05),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
 
   &:hover {
     background: ${theme.colors.tertiary}30;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+
+    &::before {
+      left: 100%;
+    }
   }
+
+  /* Staggered animation */
+  animation: ${slideInAnimation} 0.5s ease-out both;
+
+  ${(props) => {
+    const delay = props.position ? (props.position - 1) * 0.05 : 0;
+    return `animation-delay: ${delay}s;`;
+  }}
 
   ${(props) => {
     if (props.position && props.position <= 4) {
-      return `border-left: 3px solid ${theme.colors.green};`;
+      return `
+        border-left: 3px solid ${theme.colors.green};
+        
+        &:hover {
+          border-left-color: ${theme.colors.green};
+          border-left-width: 4px;
+        }
+      `;
     } else if (props.position && props.position <= 6) {
-      return `border-left: 3px solid ${theme.colors.yellow};`;
+      return `
+        border-left: 3px solid ${theme.colors.yellow};
+        
+        &:hover {
+          border-left-color: ${theme.colors.yellow};
+          border-left-width: 4px;
+        }
+      `;
     } else if (props.position && props.position >= 18) {
-      return `border-left: 3px solid ${theme.colors.red};`;
+      return `
+        border-left: 3px solid ${theme.colors.red};
+        
+        &:hover {
+          border-left-color: ${theme.colors.red};
+          border-left-width: 4px;
+        }
+      `;
     }
     return "";
   }}
@@ -177,12 +280,51 @@ const TeamInfo = styled.div`
 const TeamLogo = styled.div`
   width: 24px;
   height: 24px;
-  background: ${theme.colors.tertiary};
+  background: linear-gradient(
+    135deg,
+    ${theme.colors.tertiary} 0%,
+    ${theme.colors.secondary} 100%
+  );
   border-radius: ${theme.borderRadius.sm};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(
+      circle,
+      rgba(139, 92, 246, 0.3) 0%,
+      transparent 70%
+    );
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+
+  &:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: linear-gradient(
+      135deg,
+      rgba(139, 92, 246, 0.1) 0%,
+      ${theme.colors.tertiary} 100%
+    );
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+
+    &::before {
+      width: 40px;
+      height: 40px;
+    }
+  }
 `;
 
 const TeamName = styled.span`

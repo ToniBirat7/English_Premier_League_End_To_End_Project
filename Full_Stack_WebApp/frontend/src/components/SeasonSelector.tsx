@@ -9,7 +9,9 @@ const SelectorContainer = styled.div`
   z-index: 1000;
 `;
 
-const SelectorButton = styled.button<{ isOpen?: boolean }>`
+const SelectorButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== "isOpen",
+})<{ isOpen?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.sm};
@@ -37,13 +39,17 @@ const SelectorButton = styled.button<{ isOpen?: boolean }>`
   }
 `;
 
-const DropdownIcon = styled.span<{ isOpen?: boolean }>`
+const DropdownIcon = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== "isOpen",
+})<{ isOpen?: boolean }>`
   font-size: 12px;
   transition: transform 0.2s ease;
   transform: ${(props) => (props.isOpen ? "rotate(180deg)" : "rotate(0deg)")};
 `;
 
-const DropdownMenu = styled.div<{ isOpen?: boolean }>`
+const DropdownMenu = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== "isOpen",
+})<{ isOpen?: boolean }>`
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -63,7 +69,9 @@ const DropdownMenu = styled.div<{ isOpen?: boolean }>`
   overflow-y: auto;
 `;
 
-const DropdownItem = styled.button<{ active?: boolean }>`
+const DropdownItem = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== "active",
+})<{ active?: boolean }>`
   width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${(props) =>

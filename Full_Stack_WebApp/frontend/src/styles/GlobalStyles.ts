@@ -7,6 +7,46 @@ export const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  /* Custom Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(30, 30, 40, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+    transform: scale(1.1);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: rgba(30, 30, 40, 0.3);
+  }
+
+  /* Firefox Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #8b5cf6 rgba(30, 30, 40, 0.3);
+  }
+
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -247,7 +287,10 @@ export const Button = styled.button<{
   }}
 `;
 
-export const Flex = styled.div<{
+export const Flex = styled.div.withConfig({
+  shouldForwardProp: (prop) =>
+    !["direction", "justify", "align", "gap", "wrap"].includes(prop),
+})<{
   direction?: "row" | "column";
   justify?:
     | "flex-start"
@@ -267,13 +310,17 @@ export const Flex = styled.div<{
   flex-wrap: ${(props) => props.wrap || "nowrap"};
 `;
 
-export const Grid = styled.div<{ columns?: number; gap?: string }>`
+export const Grid = styled.div.withConfig({
+  shouldForwardProp: (prop) => !["columns", "gap"].includes(prop),
+})<{ columns?: number; gap?: string }>`
   display: grid;
   grid-template-columns: repeat(${(props) => props.columns || 1}, 1fr);
   gap: ${(props) => props.gap || theme.spacing.md};
 `;
 
-export const Text = styled.span<{
+export const Text = styled.span.withConfig({
+  shouldForwardProp: (prop) => !["size", "weight", "color"].includes(prop),
+})<{
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   weight?: "normal" | "medium" | "semibold" | "bold";
   color?:

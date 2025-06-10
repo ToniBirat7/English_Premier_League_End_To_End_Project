@@ -78,7 +78,9 @@ const TabsContainer = styled.div`
   margin-bottom: ${theme.spacing.lg};
 `;
 
-const Tab = styled.button<{ active?: boolean }>`
+const Tab = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== "active",
+})<{ active?: boolean }>`
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   background: ${(props) =>
     props.active ? theme.colors.purple : theme.colors.secondary};
