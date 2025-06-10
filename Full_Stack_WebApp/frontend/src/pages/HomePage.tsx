@@ -6,11 +6,16 @@ import Matches from "../components/Matches";
 
 const HomeContainer = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: ${theme.spacing.lg};
+  grid-template-columns: 8fr 4fr; /* 8-column main, 4-column sidebar for 12-column system */
+  gap: ${theme.spacing.xl};
+
+  @media (max-width: ${theme.breakpoints.desktop}) {
+    gap: ${theme.spacing.lg};
+  }
 
   @media (max-width: ${theme.breakpoints.tablet}) {
     grid-template-columns: 1fr;
+    gap: ${theme.spacing.md};
   }
 `;
 
@@ -223,45 +228,19 @@ const HomePage: React.FC = () => {
       matches: 380,
       season: "2024/25",
     },
-    {
-      name: "Champions League",
-      country: "Europe",
-      logo: "🏆",
-      path: "/champions-league",
-      teams: 32,
-      matches: 125,
-      season: "2024/25",
-    },
-    {
-      name: "Europa League",
-      country: "Europe",
-      logo: "🥈",
-      path: "/europa-league",
-      teams: 32,
-      matches: 141,
-      season: "2024/25",
-    },
-    {
-      name: "LaLiga",
-      country: "Spain",
-      logo: "🇪🇸",
-      path: "/laliga",
-      teams: 20,
-      matches: 380,
-      season: "2024/25",
-    },
   ];
 
   return (
     <HomeContainer>
       <MainColumn>
         <WelcomeCard>
-          <WelcomeTitle>Football today</WelcomeTitle>
+          <WelcomeTitle>Premier League Hub</WelcomeTitle>
           <WelcomeSubtitle>
-            livescore and schedule for Premier League, Champions League
+            Your ultimate destination for Premier League scores, fixtures, and
+            standings
           </WelcomeSubtitle>
           <Text size="sm" style={{ opacity: 0.8 }}>
-            16 Aug • 25 May
+            16 Aug • 25 May • England's Premier Football Competition
           </Text>
         </WelcomeCard>
 

@@ -89,6 +89,38 @@ const RoundDate = styled.div`
 const MatchesList = styled.div`
   max-height: 600px;
   overflow-y: auto;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: ${theme.colors.tertiary};
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${theme.colors.border};
+    border-radius: 4px;
+
+    &:hover {
+      background: ${theme.colors.textTertiary};
+    }
+  }
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: ${theme.colors.border} ${theme.colors.tertiary};
+
+  /* Responsive height adjustments */
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    max-height: 500px;
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    max-height: 400px;
+  }
 `;
 
 const MatchItem = styled.div`
@@ -97,11 +129,14 @@ const MatchItem = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.md};
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
 
   &:hover {
-    background: ${theme.colors.tertiary}30;
+    background: ${theme.colors.tertiary}20;
+    border-left: 3px solid ${theme.colors.purple};
+    padding-left: calc(${theme.spacing.lg} - 3px);
   }
 
   &:last-child {

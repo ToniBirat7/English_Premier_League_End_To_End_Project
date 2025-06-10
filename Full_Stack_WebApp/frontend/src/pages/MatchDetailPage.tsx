@@ -6,11 +6,16 @@ import { theme, Card, Text, Flex } from "../styles/GlobalStyles";
 
 const MatchDetailContainer = styled.div`
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: ${theme.spacing.lg};
+  grid-template-columns: 8fr 4fr; /* 8-column main, 4-column sidebar for 12-column system */
+  gap: ${theme.spacing.xl};
+
+  @media (max-width: ${theme.breakpoints.desktop}) {
+    gap: ${theme.spacing.lg};
+  }
 
   @media (max-width: ${theme.breakpoints.tablet}) {
     grid-template-columns: 1fr;
+    gap: ${theme.spacing.md};
   }
 `;
 

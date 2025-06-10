@@ -12,6 +12,34 @@ const SidebarContainer = styled.aside`
   position: fixed;
   left: 0;
   top: 60px;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: ${theme.colors.secondary};
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${theme.colors.border};
+    border-radius: 3px;
+
+    &:hover {
+      background: ${theme.colors.textTertiary};
+    }
+  }
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: ${theme.colors.border} ${theme.colors.secondary};
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
 `;
 
 const SidebarContent = styled.div`
@@ -87,60 +115,23 @@ const StarIcon = styled.div<{ starred?: boolean }>`
   }
 `;
 
-const ShowMoreButton = styled.button`
-  width: 100%;
-  padding: ${theme.spacing.sm};
-  background: transparent;
-  border: none;
-  color: ${theme.colors.purple};
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: ${theme.borderRadius.md};
-
-  &:hover {
-    background: ${theme.colors.secondary};
-  }
-`;
-
-interface SidebarProps {}
-
-const Sidebar: React.FC<SidebarProps> = () => {
+const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
+  const handleLinkClick = () => {
+    // No mobile menu to close
+  };
+
   const competitions = [
-    {
-      name: "UEFA Champions League",
-      path: "/champions-league",
-      icon: "🏆",
-      starred: true,
-    },
-    {
-      name: "UEFA Europa League",
-      path: "/europa-league",
-      icon: "🥈",
-      starred: true,
-    },
     {
       name: "Premier League",
       path: "/premier-league",
-      icon: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      icon: "🏴",
       starred: true,
-    },
-    {
-      name: "LaLiga",
-      path: "/laliga",
-      icon: "🇪🇸",
-      starred: true,
-    },
-    {
-      name: "Bundesliga",
-      path: "/bundesliga",
-      icon: "🇩🇪",
-      starred: false,
     },
   ];
 
@@ -148,13 +139,14 @@ const Sidebar: React.FC<SidebarProps> = () => {
     <SidebarContainer>
       <SidebarContent>
         <Section>
-          <SectionTitle>Top competitions</SectionTitle>
+          <SectionTitle>Football Competitions</SectionTitle>
           <CompetitionList>
             {competitions.map((competition) => (
               <CompetitionItem
                 key={competition.path}
                 to={competition.path}
                 active={isActive(competition.path)}
+                onClick={handleLinkClick}
               >
                 <CompetitionIcon>{competition.icon}</CompetitionIcon>
                 {competition.name}
@@ -163,7 +155,23 @@ const Sidebar: React.FC<SidebarProps> = () => {
                 </StarIcon>
               </CompetitionItem>
             ))}
-            <ShowMoreButton>Show more ⌄</ShowMoreButton>
+          </CompetitionList>
+        </Section>
+
+        <Section>
+          <SectionTitle>Quick Stats</SectionTitle>
+          <CompetitionList>
+            <CompetitionItem to="/premier-league" onClick={handleLinkClick}>
+              <CompetitionIcon>⚽</CompetitionIcon>
+              380 Matches
+            </CompetitionItem>
+            <CompetitionItem to="/premier-league" onClick={handleLinkClick}>
+              <CompetitionIcon>👥</CompetitionIcon>
+              20 Teams
+            </CompetitionItem>
+            <CompetitionItem to="/premier-league" onClick={handleLinkClick}>
+              <CompetitionIcon>🏆</CompetitionIcon>6 Seasons
+            </CompetitionItem>
           </CompetitionList>
         </Section>
       </SidebarContent>

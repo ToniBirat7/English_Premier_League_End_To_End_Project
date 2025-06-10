@@ -12,13 +12,26 @@ const HeaderContainer = styled.header`
 `;
 
 const HeaderContent = styled.div`
-  max-width: 1200px;
+  max-width: 1400px; /* Match the Layout max-width */
   margin: 0 auto;
-  padding: 0 ${theme.spacing.lg};
+  padding: 0 ${theme.spacing.xl};
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 60px;
+
+  /* Responsive padding to match ContentArea */
+  @media (max-width: ${theme.breakpoints.desktop}) {
+    padding: 0 ${theme.spacing.lg};
+  }
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    padding: 0 ${theme.spacing.md};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    padding: 0 ${theme.spacing.sm};
+  }
 `;
 
 const Logo = styled(Link)`
@@ -87,19 +100,6 @@ const NavIcon = styled.div`
   font-size: 16px;
 `;
 
-const NavBadge = styled.span`
-  background: ${theme.colors.red};
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 16px;
-  text-align: center;
-`;
-
 const SearchContainer = styled.div`
   position: relative;
   flex: 1;
@@ -158,9 +158,7 @@ const IconButton = styled.button`
   }
 `;
 
-interface HeaderProps {}
-
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC = () => {
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -171,8 +169,8 @@ const Header: React.FC<HeaderProps> = () => {
     <HeaderContainer>
       <HeaderContent>
         <Logo to="/">
-          <LogoIcon>S</LogoIcon>
-          SofaScore
+          <LogoIcon>⚽</LogoIcon>
+          Premier League Hub
         </Logo>
 
         <Navigation>
@@ -180,45 +178,6 @@ const Header: React.FC<HeaderProps> = () => {
             <NavItem to="/" active={isActive("/")}>
               <NavIcon>⚽</NavIcon>
               Football
-            </NavItem>
-            <NavItem to="/basketball" active={isActive("/basketball")}>
-              <NavIcon>🏀</NavIcon>
-              Basketball
-            </NavItem>
-            <NavItem to="/tennis" active={isActive("/tennis")}>
-              <NavIcon>🎾</NavIcon>
-              Tennis
-            </NavItem>
-            <NavItem to="/table-tennis" active={isActive("/table-tennis")}>
-              <NavIcon>🏓</NavIcon>
-              Table Tennis
-            </NavItem>
-            <NavItem to="/ice-hockey" active={isActive("/ice-hockey")}>
-              <NavIcon>🏒</NavIcon>
-              Ice Hockey
-            </NavItem>
-            <NavItem to="/esports" active={isActive("/esports")}>
-              <NavIcon>🎮</NavIcon>
-              Esports
-            </NavItem>
-            <NavItem to="/handball" active={isActive("/handball")}>
-              <NavIcon>🤾</NavIcon>
-              Handball
-            </NavItem>
-            <NavItem to="/volleyball" active={isActive("/volleyball")}>
-              <NavIcon>🏐</NavIcon>
-              Volleyball
-            </NavItem>
-            <NavItem to="/baseball" active={isActive("/baseball")}>
-              <NavIcon>⚾</NavIcon>
-              Baseball
-            </NavItem>
-            <NavItem
-              to="/american-football"
-              active={isActive("/american-football")}
-            >
-              <NavIcon>🏈</NavIcon>
-              American Football
             </NavItem>
           </NavSection>
         </Navigation>

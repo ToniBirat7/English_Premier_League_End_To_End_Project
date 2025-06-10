@@ -115,14 +115,73 @@ export const theme = {
   },
 };
 
+// 12-Column Grid System
+export const GridContainer = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 ${theme.spacing.xl};
+
+  /* Responsive padding */
+  @media (max-width: ${theme.breakpoints.desktop}) {
+    padding: 0 ${theme.spacing.lg};
+  }
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    padding: 0 ${theme.spacing.md};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    padding: 0 ${theme.spacing.sm};
+  }
+`;
+
+export const GridRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: ${theme.spacing.lg};
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    gap: ${theme.spacing.md};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    gap: ${theme.spacing.sm};
+  }
+`;
+
+export const GridCol = styled.div<{
+  span?: number;
+  spanTablet?: number;
+  spanMobile?: number;
+}>`
+  grid-column: span ${(props) => props.span || 12};
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    grid-column: span ${(props) => props.spanTablet || props.span || 12};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    grid-column: span ${(props) => props.spanMobile || 12};
+  }
+`;
+
 // Common styled components
 export const Container = styled.div`
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 ${theme.spacing.md};
+  padding: 0 ${theme.spacing.xl};
 
-  @media (min-width: ${theme.breakpoints.desktop}) {
+  /* Responsive padding to match the 12-column system */
+  @media (max-width: ${theme.breakpoints.desktop}) {
     padding: 0 ${theme.spacing.lg};
+  }
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    padding: 0 ${theme.spacing.md};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    padding: 0 ${theme.spacing.sm};
   }
 `;
 

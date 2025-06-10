@@ -18,12 +18,33 @@ const MainContent = styled.main`
   margin-top: 60px;
   min-height: calc(100vh - 60px);
   background: ${theme.colors.primary};
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    margin-left: 0;
+  }
 `;
 
 const ContentArea = styled.div`
-  padding: ${theme.spacing.lg};
-  max-width: 1200px;
+  max-width: 1400px; /* Increased max-width for 12-column layout */
   margin: 0 auto;
+  padding: ${theme.spacing.lg} ${theme.spacing.xl};
+
+  /* 12-column grid system with side margins */
+  @media (min-width: 1600px) {
+    max-width: 1200px; /* Content centered with margins on larger screens */
+  }
+
+  @media (max-width: ${theme.breakpoints.desktop}) {
+    padding: ${theme.spacing.lg} ${theme.spacing.lg};
+  }
+
+  @media (max-width: ${theme.breakpoints.tablet}) {
+    padding: ${theme.spacing.md} ${theme.spacing.md};
+  }
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    padding: ${theme.spacing.sm} ${theme.spacing.sm};
+  }
 `;
 
 interface LayoutProps {}
@@ -40,22 +61,6 @@ const Layout: React.FC<LayoutProps> = () => {
               <Route path="/" element={<HomePage />} />
               <Route path="/premier-league" element={<PremierLeaguePage />} />
               <Route path="/match/:matchId" element={<MatchDetailPage />} />
-              <Route
-                path="/champions-league"
-                element={<div>Champions League coming soon...</div>}
-              />
-              <Route
-                path="/europa-league"
-                element={<div>Europa League coming soon...</div>}
-              />
-              <Route
-                path="/laliga"
-                element={<div>LaLiga coming soon...</div>}
-              />
-              <Route
-                path="/bundesliga"
-                element={<div>Bundesliga coming soon...</div>}
-              />
             </Routes>
           </ContentArea>
         </MainContent>
