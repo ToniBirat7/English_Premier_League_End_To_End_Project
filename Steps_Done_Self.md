@@ -18,7 +18,6 @@ mariadb -u birat-gautam -p
 
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON your_database.* TO 'birat-gautam'@'%' IDENTIFIED BY 'Admin123@Birat';
 ERROR 1044 (42000): Access denied for user 'birat-gautam'@'localhost' to database 'your_database'
-
 ```
 
 ### **Create all the Required MariadB Databases**
