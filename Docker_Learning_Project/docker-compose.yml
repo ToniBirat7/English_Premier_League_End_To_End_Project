@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database
@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5435:5432"
+      - "5435:5432" # Use port 5435 to avoid conflicts
     networks:
       - todo_network
     healthcheck:
@@ -24,7 +24,7 @@ services:
 
   # FastAPI Backend
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: todo_backend
@@ -33,7 +33,7 @@ services:
       HOST: 0.0.0.0
       PORT: 8000
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       database:
         condition: service_healthy
@@ -50,9 +50,9 @@ services:
       dockerfile: Dockerfile
     container_name: todo_frontend
     environment:
-      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_API_URL: http://localhost:8001
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - backend
     networks:
@@ -61,9 +61,11 @@ services:
       - ./frontend:/app
       - /app/node_modules
 
+# Named volumes
 volumes:
   postgres_data:
 
+# Custom network
 networks:
   todo_network:
     driver: bridge
