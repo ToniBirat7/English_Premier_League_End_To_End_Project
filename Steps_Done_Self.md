@@ -583,6 +583,12 @@ Complete Web Application with React and Django.
 
 # **MVP Version: 2.0.0**
 
+**Left to Contenarize All**
+
+**Docker Virtual Image Location is `Ubunut/mnt/usb/Docker_Image/DockerDesktop`**
+
+If any error in mounting the USB drive, then use the command `sudo mount -t ntfs-3g /dev/sda1 /mnt/usb` to mount the USB drive.
+
 **Use Docker Compose to manage the containers**
 
 - Create a `docker-compose.yml` file to define the services and their configurations.

@@ -27,9 +27,9 @@ class Command(BaseCommand):
         
         # Build full path - if it's relative, make it relative to the Full_Stack_WebApp directory
         if not os.path.isabs(csv_path):
-            # Go up to Backend, then up to Full_Stack_WebApp, then to the CSV path
-            project_root = os.path.dirname(os.path.dirname(settings.BASE_DIR))
-            full_csv_path = os.path.join(project_root, csv_path)
+            # Get the Full_Stack_WebApp directory (parent of Backend)
+            full_stack_dir = os.path.dirname(settings.BASE_DIR)
+            full_csv_path = os.path.join(full_stack_dir, csv_path)
         else:
             full_csv_path = csv_path
         
@@ -116,7 +116,22 @@ class Command(BaseCommand):
                     # Get match data
                     fthg = int(row['FTHG'])
                     ftag = int(row['FTAG'])
-                    ftr = row['FTR']
+                    ftr_raw = row['FTR'].strip()
+                    
+                    # Normalize FTR to match Django model (H/A/D only)
+                    if ftr_raw in ['H', 'A', 'D']:
+                        ftr = ftr_raw
+                    elif ftr_raw in ['NH', 'NA']:
+                        # Map NH to A, NA to H (opposite results)
+                        ftr = 'A' if ftr_raw == 'NH' else 'H'
+                    else:
+                        # Calculate from goals if FTR is unclear
+                        if fthg > ftag:
+                            ftr = 'H'
+                        elif ftag > fthg:
+                            ftr = 'A'
+                        else:
+                            ftr = 'D'
                     
                     # Use season from CSV if available, otherwise determine from date
                     if 'Season' in row and row['Season']:
