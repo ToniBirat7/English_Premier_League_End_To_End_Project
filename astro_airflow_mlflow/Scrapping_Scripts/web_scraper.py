@@ -27,24 +27,15 @@ from typing import List, Dict, Optional
 import random
 from urllib.parse import urljoin
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('scraper.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+from src import src_logger as logger
 
 class PremierLeagueWebScraper:
     """
     Web scraper for Premier League match data from the full-stack application
     """
     
-    def __init__(self, base_url: str = "http://localhost:3000", api_url: str = "http://localhost:8000/api",
-                 db_name: str = "weekly_scrapped_data", db_table: str = "PREMIER_LEAGUE_MATCHES_4"):
+    def __init__(self, base_url: str = "http://host.docker.internal:3000", api_url: str = "http://host.docker.internal:8000/api",
+                 db_name: str = "weekly_scrapped_data", db_table: str = "PREMIER_LEAGUE_MATCHES_5", db_config: Optional[Dict] = None):
         """
         Initialize the scraper with base URL, API URL, and database configuration
         """
@@ -64,13 +55,7 @@ class PremierLeagueWebScraper:
         self.current_season = "2024-25"
         
         # Database setup - PostgreSQL to match your infrastructure
-        self.db_config = {
-            'host': 'localhost',
-            'port': '5434',
-            'user': 'postgres',
-            'password': 'postgres',
-            'database': 'weekly_scrapped_data'
-        }
+        self.db_config = db_config
         self.table_name = db_table
         
     def setup_database(self):
@@ -84,7 +69,7 @@ class PremierLeagueWebScraper:
                 port=self.db_config['port'],
                 user=self.db_config['user'],
                 password=self.db_config['password'],
-                database='postgres'  # Connect to default database first
+                database=self.db_config['database']  # Connect to default database first
             )
             conn.autocommit = True
             cursor = conn.cursor()
@@ -456,7 +441,6 @@ class PremierLeagueWebScraper:
             logger.error(f"Scraping failed: {e}")
             return False
 
-
 def main():
     """
     Main function to run the scraper
@@ -484,7 +468,6 @@ def main():
         print("\n❌ Scraping failed. Check logs for details.")
     
     print("=" * 60)
-
 
 if __name__ == "__main__":
     main()

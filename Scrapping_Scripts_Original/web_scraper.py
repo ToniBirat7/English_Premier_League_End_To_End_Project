@@ -456,7 +456,6 @@ class PremierLeagueWebScraper:
             logger.error(f"Scraping failed: {e}")
             return False
 
-
 def main():
     """
     Main function to run the scraper
@@ -484,7 +483,6 @@ def main():
         print("\n❌ Scraping failed. Check logs for details.")
     
     print("=" * 60)
-
 
 if __name__ == "__main__":
     main()
