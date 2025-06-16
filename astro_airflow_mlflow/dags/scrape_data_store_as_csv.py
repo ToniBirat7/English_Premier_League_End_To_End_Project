@@ -166,22 +166,22 @@ with DAG(
             # Use RealDictCursor to get column names
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
-            # First check if the table exists
-            check_table_query = """
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name = %s
-            );
-            """
-            cursor.execute(check_table_query, (TABLE_NAME,))
-            result = cursor.fetchone()
-            table_exists = result and result.get('exists', False)
+            # # First check if the table exists
+            # check_table_query = """
+            # SELECT EXISTS (
+            #     SELECT FROM information_schema.tables 
+            #     WHERE table_schema = 'public' AND table_name = %s
+            # );
+            # """
+            # cursor.execute(check_table_query, (TABLE_NAME,))
+            # result = cursor.fetchone()
+            # table_exists = result and result.get('exists', False)
             
-            if not table_exists:
-                logger.warning(f"Table {TABLE_NAME} does not exist in the database")
-                # Return empty DataFrame as dict
-                empty_df = pd.DataFrame()
-                return empty_df.to_dict()
+            # if not table_exists:
+            #     logger.warning(f"Table {TABLE_NAME} does not exist in the database")
+            #     # Return empty DataFrame as dict
+            #     empty_df = pd.DataFrame()
+            #     return empty_df.to_dict()
             
             # Query to get all data from the table
             query = f"SELECT * FROM {TABLE_NAME} ORDER BY DT, HT, AT"
