@@ -166,23 +166,6 @@ with DAG(
             # Use RealDictCursor to get column names
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
-            # # First check if the table exists
-            # check_table_query = """
-            # SELECT EXISTS (
-            #     SELECT FROM information_schema.tables 
-            #     WHERE table_schema = 'public' AND table_name = %s
-            # );
-            # """
-            # cursor.execute(check_table_query, (TABLE_NAME,))
-            # result = cursor.fetchone()
-            # table_exists = result and result.get('exists', False)
-            
-            # if not table_exists:
-            #     logger.warning(f"Table {TABLE_NAME} does not exist in the database")
-            #     # Return empty DataFrame as dict
-            #     empty_df = pd.DataFrame()
-            #     return empty_df.to_dict()
-            
             # Query to get all data from the table
             query = f"SELECT * FROM {TABLE_NAME} ORDER BY DT, HT, AT"
             
@@ -213,6 +196,19 @@ with DAG(
             logger.info(f"DataFrame columns: {df.columns.tolist()}")
             logger.info(f"DataFrame head:\n{df.head()}")
             
+            # Convert datetime/timestamp columns to strings to prevent serialization errors
+            for col in df.columns:
+                # Check if column contains datetime-like objects
+                if pd.api.types.is_datetime64_any_dtype(df[col]) or df[col].dtype == 'object' and df[col].notna().any() and isinstance(df[col].iloc[0], (pd.Timestamp, datetime)):
+                    logger.info(f"Converting datetime column {col} to string format")
+                    df[col] = df[col].astype(str)
+                # Handle date objects specifically
+                elif df[col].dtype == 'object' and df[col].notna().any() and hasattr(df[col].iloc[0], 'strftime'):
+                    logger.info(f"Converting date column {col} to string format")
+                    df[col] = df[col].apply(lambda x: x.strftime('%Y-%m-%d') if x is not None else None)
+            
+            logger.info("All datetime columns converted to strings for XCom compatibility")
+            
             # Return DataFrame as a dictionary for serialization in Airflow
             return df.to_dict()
             
@@ -221,6 +217,7 @@ with DAG(
             # Return empty DataFrame as dict instead of raising exception
             # This allows the DAG to continue running
             empty_df = pd.DataFrame()
+            logger.info("Returning empty DataFrame as dict due to error")
             return empty_df.to_dict()
         finally:
             if conn:
@@ -239,33 +236,34 @@ with DAG(
             logger.info("Converting data to DataFrame")
             df = pd.DataFrame.from_dict(data_dict)
             
+            # Make sure all timestamp/datetime columns remain as strings
+            # This handles any columns that might be automatically converted back to datetime
+            for col in df.columns:
+                if pd.api.types.is_datetime64_any_dtype(df[col]) or (df[col].dtype == 'object' and df[col].notna().any() and hasattr(df[col].iloc[0], 'strftime')):
+                    logger.info(f"Ensuring column {col} remains as string format")
+                    df[col] = df[col].astype(str)
+            
             # Check if the DataFrame is empty
             if df.empty:
                 logger.warning("DataFrame is empty. No data to convert to CSV.")
                 logger.warning("Creating a minimal sample CSV file to maintain pipeline integrity.")
                 
-                # Create a minimal sample DataFrame with correct columns but no rows
-                sample_columns = [
-                    'id', 'dt', 'ht', 'at', 'fthg', 'ftag', 'ftr', 'hp', 'ap', 
-                    'hs', 'as_', 'hst', 'ast', 'hc', 'ac', 'hf', 'af', 'hy', 'ay', 
-                    'hr', 'ar', 'mw', 'season', 'scraped_at'
-                ]
-                df = pd.DataFrame(columns=sample_columns)
-                
-                # Add a note row explaining this is a placeholder
-                placeholder_row = {col: None for col in sample_columns}
-                placeholder_row['dt'] = datetime.now().strftime('%Y-%m-%d')
-                placeholder_row['ht'] = "NO_DATA_AVAILABLE"
-                placeholder_row['at'] = "API_CONNECTION_FAILED"
-                placeholder_row['ftr'] = "N/A"
-                placeholder_row['season'] = "2024-25"
-                df = pd.concat([df, pd.DataFrame([placeholder_row])], ignore_index=True)
+                # Create a minimal sample DataFrame with placeholder data
+                logger.info("Creating a placeholder DataFrame with explanation row")
+                placeholder_data = {
+                    'Date': [datetime.now().strftime('%Y-%m-%d')],
+                    'HomeTeam': ["NO_DATA_AVAILABLE"],
+                    'AwayTeam': ["API_CONNECTION_FAILED"],
+                    'FTR': ["N/A"],
+                    'SEASON': ["2024-25"]
+                }
+                df = pd.DataFrame(placeholder_data)
                 
                 logger.info("Created a placeholder DataFrame with explanation row")
             
             # Generate filename with date and time
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"premier_league_data_{timestamp}.csv"
+            filename = f"premier_league_data_scrapped_data.csv"
             
             # Get dataset path from config
             dataset_path = config_dict['dataset_path']
@@ -277,6 +275,31 @@ with DAG(
             
             # Full path for the CSV file
             csv_path = os.path.join(dataset_path, filename)
+            
+            # Rename columns to match expected format
+            logger.info("Renaming columns to match expected format")
+            # Create a column mapping dictionary
+            column_mapping = {
+                'dt': 'Date',
+                'ht': 'HomeTeam',
+                'at': 'AwayTeam',
+                'fthg': 'FTHG',
+                'ftag': 'FTAG',
+                'ftr': 'FTR'
+            }
+            
+            # For all other columns, capitalize them
+            for col in df.columns:
+                if col not in column_mapping:
+                    # Handle special case for 'as_' column
+                    if col == 'as_':
+                        column_mapping[col] = 'AS'
+                    else:
+                        column_mapping[col] = col.upper()
+            
+            # Rename the columns
+            df = df.rename(columns=column_mapping)
+            logger.info(f"Columns after renaming: {df.columns.tolist()}")
             
             logger.info(f"Saving data to CSV: {csv_path}")
             
@@ -338,53 +361,34 @@ with DAG(
             if response.status_code == 200:
                 logger.info(f"✅ API is accessible! Status code: {response.status_code}")
                 
-                # Try to access the matches endpoint
-                matches_url = f"{api_url}/matches/"
-                logger.info(f"Testing matches endpoint: {matches_url}")
-                
-                matches_response = requests.get(
-                    matches_url,
-                    timeout=10,
-                    headers={
-                        'User-Agent': 'Airflow-API-Check/1.0',
-                        'Accept': 'application/json'
-                    }
-                )
-                
-                if matches_response.status_code == 200:
-                    logger.info(f"✅ Matches endpoint is accessible! Status code: {matches_response.status_code}")
+                # Try to access the matches
+                try:
+                    data = response.json()
+                    if isinstance(data, dict) and data.get('message') == 'Welcome to the Premier League API':
+                        logger.info("✅ API response looks valid")
+                    else:
+                        logger.info(f"API response content: {data}")
                     return True
-                else:
-                    logger.error(f"❌ Matches endpoint returned status code: {matches_response.status_code}")
-                    logger.error(f"Response: {matches_response.text[:500]}")
-                    # We'll continue anyway to let the scraper handle fallback logic
+                except Exception as e:
+                    logger.warning(f"⚠️ API is accessible but returned invalid JSON: {e}")
+                    logger.warning(f"Response content: {response.text[:200]}...")
                     return False
             else:
-                logger.error(f"❌ API returned status code: {response.status_code}")
-                logger.error(f"Response: {response.text[:500]}")
-                # We'll continue anyway to let the scraper handle fallback logic
+                logger.warning(f"⚠️ API returned status code {response.status_code}")
+                logger.warning(f"Response content: {response.text[:200]}...")
                 return False
                 
         except RequestException as e:
-            logger.error(f"❌ API connection error: {e}")
-            # We'll continue anyway to let the scraper handle fallback logic
+            logger.error(f"❌ API connectivity check failed: {e}")
             return False
         except Exception as e:
-            logger.error(f"❌ Unexpected error during API check: {e}")
-            # We'll continue anyway to let the scraper handle fallback logic
+            logger.error(f"❌ Unexpected error during API connectivity check: {e}")
             return False
 
     # Define the task dependencies
     config = initialize_configuration_manager()
-    api_check = check_api_connectivity()
-    scraper_success = run_web_scraper(api_check)
-    postgresql_data = fetch_data_from_postgresql()
-    csv_path = convert_to_csv_and_save(postgresql_data, config)
-    log_result = log_csv_file_path(csv_path)
-    
-    # Define task dependencies
-    api_check.set_upstream(config)
-    scraper_success.set_upstream(api_check)
-    postgresql_data.set_upstream(scraper_success)
-    csv_path.set_upstream([postgresql_data, config])
-    log_result.set_upstream(csv_path)
+    api_accessible = check_api_connectivity()
+    scraper_success = run_web_scraper(api_accessible)
+    data = fetch_data_from_postgresql()
+    csv_path = convert_to_csv_and_save(data, config)
+    log_csv_file_path(csv_path)

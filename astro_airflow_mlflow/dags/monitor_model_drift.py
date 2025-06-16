@@ -105,6 +105,10 @@ with DAG(
         
         try:
             # Get experiment by name
+            if ml_flow_config['experiment_name'] is None:
+                logger.error("Experiment name is None")
+                return pd.DataFrame()
+                
             experiment = mlflow.get_experiment_by_name(ml_flow_config['experiment_name'])
             if experiment is None:
                 logger.warning(f"Experiment '{ml_flow_config['experiment_name']}' not found")
@@ -124,44 +128,116 @@ with DAG(
             runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
             logger.info(f"Found {len(runs)} runs for experiment '{experiment.name}'")
             
-            if runs.empty:
-                logger.warning("No runs found for the experiment")
-                return pd.DataFrame()
+            # Check if runs is empty (handles both DataFrame and list)
+            if isinstance(runs, pd.DataFrame):
+                if runs.empty:
+                    logger.warning("No runs found for the experiment")
+                    return pd.DataFrame()
+            else:
+                if len(runs) == 0:
+                    logger.warning("No runs found for the experiment")
+                    return pd.DataFrame()
+                # Convert list of runs to DataFrame if needed
+                try:
+                    runs = pd.DataFrame([run.to_dictionary() for run in runs])
+                except Exception as e:
+                    logger.error(f"Error converting runs to DataFrame: {e}")
+                    return pd.DataFrame()
             
             # Extract relevant metrics and metadata from runs
-            for _, run in runs.iterrows():
-                run_metrics = {
-                    'run_id': run.run_id,
-                    'start_time': datetime.fromtimestamp(run.start_time/1000),  # Convert ms to datetime
-                    'status': run.status
-                }
-                
-                # Extract requested metrics
-                for metric in METRICS_TO_MONITOR:
-                    metric_key = f"metrics.{metric}"
-                    if metric_key in run:
-                        run_metrics[metric] = run[metric_key]
-                    else:
-                        run_metrics[metric] = None
-                
-                all_runs_metrics.append(run_metrics)
+            for index, run in runs.iterrows():
+                try:
+                    # Get run_id, handling both DataFrame and dictionary formats
+                    run_id = run.get('run_id', run.get('run_uuid', f"run_{index}"))
+                    
+                    # Get start_time and convert safely
+                    start_time = pd.Timestamp.now()  # Default value
+                    try:
+                        # Try different ways to access start_time
+                        if 'start_time' in run:
+                            timestamp_ms = run['start_time']
+                        elif hasattr(run, 'start_time'):
+                            timestamp_ms = run.start_time
+                        else:
+                            # Default to current time if can't find start_time
+                            logger.warning(f"Could not find start_time for run {run_id}")
+                            timestamp_ms = None
+                            
+                        if timestamp_ms is not None:
+                            # Convert from ms to datetime
+                            if isinstance(timestamp_ms, (int, float)):
+                                start_time = pd.to_datetime(timestamp_ms/1000, unit='s')
+                            else:
+                                # Handle if already a datetime
+                                start_time = pd.to_datetime(timestamp_ms)
+                    except Exception as e:
+                        logger.warning(f"Error converting timestamp for run {run_id}: {e}")
+                    
+                    # Create run metrics dictionary
+                    run_metrics = {
+                        'run_id': run_id,
+                        'start_time': start_time,
+                        'status': run.get('status', 'UNKNOWN')
+                    }
+                    
+                    # Extract requested metrics
+                    for metric in METRICS_TO_MONITOR:
+                        metric_key = f"metrics.{metric}"
+                        if metric_key in run:
+                            run_metrics[metric] = run[metric_key]
+                        else:
+                            run_metrics[metric] = None
+                    
+                    all_runs_metrics.append(run_metrics)
+                except Exception as e:
+                    logger.warning(f"Error processing run at index {index}: {e}")
+                    import traceback
+                    logger.debug(traceback.format_exc())
             
             # Convert to DataFrame and sort by start_time
             metrics_df = pd.DataFrame(all_runs_metrics)
+            
+            if metrics_df.empty:
+                logger.warning("No valid metrics data after processing")
+                return pd.DataFrame()
+                
             metrics_df = metrics_df.sort_values('start_time')
             
             # Save metrics to CSV for future reference
             metric_dir = os.path.join(config['artifacts_dir'], 'model_metrics')
+            create_directories([metric_dir])
             if not os.path.exists(metric_dir):
                 os.makedirs(metric_dir, exist_ok=True)
             logger.info(f"Metrics directory created at: {metric_dir}")
+            
+            # Convert datetime columns to strings to prevent serialization errors
+            metrics_df_for_csv = metrics_df.copy()
+            for col in metrics_df_for_csv.columns:
+                # Check if column contains datetime-like objects
+                if pd.api.types.is_datetime64_any_dtype(metrics_df_for_csv[col]) or (
+                    metrics_df_for_csv[col].dtype == 'object' and 
+                    metrics_df_for_csv[col].notna().any() and 
+                    len(metrics_df_for_csv[col]) > 0 and
+                    isinstance(metrics_df_for_csv[col].iloc[0], (pd.Timestamp, datetime))
+                ):
+                    logger.info(f"Converting datetime column {col} to string format")
+                    metrics_df_for_csv[col] = metrics_df_for_csv[col].astype(str)
+            
             logger.info("Saving metrics to CSV file")
             metrics_file_path = os.path.join(metric_dir, 'model_metrics_history.csv')
-            metrics_df.to_csv(metrics_file_path, index=False)
+            metrics_df_for_csv.to_csv(metrics_file_path, index=False)
             logger.info(f"Metrics saved to {metrics_file_path}")
             
             return metrics_df
             
+        except TypeError as te:
+            if "unsupported operand type(s) for /: 'Timestamp'" in str(te):
+                logger.error(f"❌ Timestamp conversion error in MLflow metrics: {te}")
+                logger.error("This is likely due to a datetime serialization issue")
+                return pd.DataFrame()
+            else:
+                logger.error(f"❌ Type error fetching metrics from MLflow: {te}")
+                return pd.DataFrame()
         except Exception as e:
             logger.error(f"❌ Error fetching metrics from MLflow: {e}")
             return pd.DataFrame()
@@ -224,17 +300,17 @@ with DAG(
                         continue
                 
                 # Calculate statistics
-                recent_mean = np.mean(recent_values)
-                historical_mean = np.mean(historical_values) if len(historical_values) > 0 else recent_values[0]
+                recent_mean = float(np.mean(recent_values))
+                historical_mean = float(np.mean(historical_values)) if len(historical_values) > 0 else float(recent_values[0])
                 
                 # Calculate percentage change
                 if historical_mean != 0:
-                    percent_change = abs(recent_mean - historical_mean) / historical_mean
+                    percent_change = float(abs(recent_mean - historical_mean) / historical_mean)
                 else:
-                    percent_change = 0
+                    percent_change = 0.0
                 
                 # Check for significant drift
-                is_drift = percent_change > DRIFT_THRESHOLD
+                is_drift = bool(percent_change > DRIFT_THRESHOLD)
                 
                 # Store results
                 drift_results[metric] = {
@@ -246,7 +322,20 @@ with DAG(
                 
                 # Create and save plot
                 plt.figure(figsize=(12, 6))
-                plt.plot(metric_data['start_time'], metric_data[metric], marker='o', linestyle='-')
+                
+                # Ensure start_time is properly converted to datetime for plotting
+                if not pd.api.types.is_datetime64_any_dtype(metric_data['start_time']):
+                    try:
+                        # Try to convert to datetime if it's not already
+                        plot_dates = pd.to_datetime(metric_data['start_time'])
+                    except Exception as e:
+                        logger.warning(f"Could not convert start_time to datetime for plotting: {e}")
+                        # Use index as x-axis if conversion fails
+                        plot_dates = range(len(metric_data))
+                else:
+                    plot_dates = metric_data['start_time']
+                    
+                plt.plot(plot_dates, metric_data[metric], marker='o', linestyle='-')
                 plt.axhline(y=historical_mean, color='r', linestyle='--', label=f'Historical Mean: {historical_mean:.4f}')
                 plt.axhline(y=recent_mean, color='g', linestyle='--', label=f'Recent Mean: {recent_mean:.4f}')
                 plt.title(f'{metric} Over Time | Drift Detected: {is_drift}')
@@ -257,10 +346,36 @@ with DAG(
                 
                 # Add annotations for drift
                 if is_drift:
+                    # Find last x position for annotation
+                    if isinstance(plot_dates, pd.Series) and len(plot_dates) > 0:
+                        # Convert to float timestamp if it's a datetime
+                        if isinstance(plot_dates.iloc[-1], (pd.Timestamp, datetime)):
+                            last_x = float(plot_dates.iloc[-1].timestamp())
+                        else:
+                            # Try to get a numeric value
+                            try:
+                                last_x = float(plot_dates.iloc[-1])
+                            except (ValueError, TypeError):
+                                # Use a position near the right edge of the plot
+                                last_x = len(plot_dates) - 1
+                    else:
+                        # If plot_dates is a range or list, use the last element
+                        if len(plot_dates) > 0:
+                            try:
+                                last_x = float(plot_dates[-1])
+                            except (ValueError, TypeError):
+                                last_x = len(plot_dates) - 1
+                        else:
+                            last_x = 0
+                    
+                    # Ensure y position is a float
+                    y_pos = float(recent_mean)
+                    y_text = float(recent_mean * 1.1)
+                    
                     plt.annotate(f'Drift: {percent_change:.2%}', 
-                                xy=(metric_data['start_time'].iloc[-1], recent_mean),
-                                xytext=(metric_data['start_time'].iloc[-1], recent_mean * 1.1),
-                                arrowprops=dict(facecolor='red', shrink=0.05))
+                               xy=(last_x, y_pos),
+                               xytext=(last_x, y_text),
+                               arrowprops=dict(facecolor='red', shrink=0.05))
                 
                 plot_path = os.path.join(plots_dir, f'{metric}_trend.png')
                 plt.savefig(plot_path)
@@ -298,9 +413,19 @@ with DAG(
             for metric, result in drift_results.items():
                 logger.info(f"  {metric}: Change of {result['percent_change']:.2%} (Drift: {'Yes' if result['drift_detected'] else 'No'})")
             
+            # Convert numpy types to Python native types for XCom serialization
+            serializable_results = {}
+            for metric, values in drift_results.items():
+                serializable_results[metric] = {
+                    'recent_mean': float(values['recent_mean']),
+                    'historical_mean': float(values['historical_mean']),
+                    'percent_change': float(values['percent_change']),
+                    'drift_detected': bool(values['drift_detected'])
+                }
+            
             return {
-                'drift_detected': any_drift,
-                'metrics_results': drift_results,
+                'drift_detected': bool(any_drift),
+                'metrics_results': serializable_results,
                 'report_path': report_path,
                 'plots_dir': plots_dir
             }
@@ -335,7 +460,7 @@ with DAG(
         
         # Check for accuracy drift
         if 'test_accuracy' in metrics_results and metrics_results['test_accuracy']['drift_detected']:
-            accuracy_decreased = metrics_results['test_accuracy']['recent_mean'] < metrics_results['test_accuracy']['historical_mean']
+            accuracy_decreased = float(metrics_results['test_accuracy']['recent_mean']) < float(metrics_results['test_accuracy']['historical_mean'])
             
             if accuracy_decreased:
                 recommendations.append("Model accuracy has decreased significantly. Consider retraining the model with recent data.")
@@ -344,7 +469,7 @@ with DAG(
         
         # Check for F1 score drift
         if 'test_f1_score' in metrics_results and metrics_results['test_f1_score']['drift_detected']:
-            f1_decreased = metrics_results['test_f1_score']['recent_mean'] < metrics_results['test_f1_score']['historical_mean']
+            f1_decreased = float(metrics_results['test_f1_score']['recent_mean']) < float(metrics_results['test_f1_score']['historical_mean'])
             
             if f1_decreased:
                 recommendations.append("Model F1 score has decreased significantly. This could indicate class imbalance issues or changes in the data distribution.")
@@ -353,8 +478,8 @@ with DAG(
         
         # Check for train-test performance gap
         if ('train_accuracy' in metrics_results and 'test_accuracy' in metrics_results):
-            train_acc = metrics_results['train_accuracy']['recent_mean']
-            test_acc = metrics_results['test_accuracy']['recent_mean']
+            train_acc = float(metrics_results['train_accuracy']['recent_mean'])
+            test_acc = float(metrics_results['test_accuracy']['recent_mean'])
             
             if train_acc - test_acc > 0.1:  # More than 10% gap
                 recommendations.append("There's a significant gap between training and testing accuracy, which could indicate overfitting.")
