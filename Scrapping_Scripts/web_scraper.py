@@ -44,7 +44,7 @@ class PremierLeagueWebScraper:
     """
     
     def __init__(self, base_url: str = "http://localhost:3000", api_url: str = "http://localhost:8000/api",
-                 db_name: str = "weekly_scrapped_data", db_table: str = "PREMIER_LEAGUE_MATCHES_3"):
+                 db_name: str = "weekly_scrapped_data", db_table: str = "PREMIER_LEAGUE_MATCHES_4"):
         """
         Initialize the scraper with base URL, API URL, and database configuration
         """
