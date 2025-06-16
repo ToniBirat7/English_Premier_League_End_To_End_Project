@@ -626,8 +626,18 @@ services:
 
 ### **Scrapping and Psotgres**
 
+**Creating Container**
+
 ```bash
 toni-birat@tonibirat:~$ docker run --name epl_postgres -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=epl_scrapped   -p 5434:5432   -d postgres:15-alpine
+```
+
+**Start the PostgreSQL container**
+
+```bash
+docker exec -it epl_postgres psql -U postgres -d weekly_scrapped_data
+
+\dt
 ```
 
 We will be scarpping the data from the `http://localhost:8000/api` backend API and storing it in the PostgreSQL database.

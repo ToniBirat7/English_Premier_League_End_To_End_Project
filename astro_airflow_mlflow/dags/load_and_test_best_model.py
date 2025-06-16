@@ -122,7 +122,7 @@ with DAG(
         raise ValueError("MLFlow tracking URI is required")
       
       mlflow.set_tracking_uri(ml_flow_config['uri'])
-      mlflow.set_experiment('Load and Test Best Model Experiment')
+      mlflow.set_experiment('Load and Test Best Model Experiment_' + datetime.now().strftime("%Y-%m-%d"))
       logger.info(f"✅ MLFlow tracking URI set to: {ml_flow_config['uri']}")
       logger.info(f"✅ MLFlow experiment name set to: Load and Test Best Model Experiment")
 
