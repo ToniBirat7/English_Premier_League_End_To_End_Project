@@ -261,6 +261,32 @@ with DAG(
         os.makedirs(plots_dir, exist_ok=True)
         
         drift_results = {}
+        plot_paths = {}  # Store plot paths for MLflow logging
+        
+        # Setup MLflow for logging drift detection results
+        mlflow_run_id = None
+        try:
+            if ml_flow_config['uri'] is not None:
+                mlflow.set_tracking_uri(ml_flow_config['uri'])
+                # Create a new experiment name for drift monitoring
+                drift_experiment_name = f"{ml_flow_config['experiment_name']}_drift_monitoring" if ml_flow_config['experiment_name'] else "drift_monitoring"
+                
+                # Get or create the experiment
+                experiment = mlflow.get_experiment_by_name(drift_experiment_name)
+                if experiment is None:
+                    logger.info(f"Creating new MLflow experiment for drift monitoring: {drift_experiment_name}")
+                    experiment_id = mlflow.create_experiment(drift_experiment_name)
+                else:
+                    experiment_id = experiment.experiment_id
+                    
+                # Start a new MLflow run for this drift analysis
+                run_name = f"drift_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                mlflow_run = mlflow.start_run(experiment_id=experiment_id, run_name=run_name)
+                mlflow_run_id = mlflow_run.info.run_id
+                logger.info(f"Started MLflow run {mlflow_run_id} for drift analysis in experiment {drift_experiment_name}")
+        except Exception as e:
+            logger.warning(f"Failed to setup MLflow for drift monitoring: {e}")
+            mlflow_run_id = None
         
         try:
             # Focus only on completed runs
@@ -380,7 +406,31 @@ with DAG(
                 plot_path = os.path.join(plots_dir, f'{metric}_trend.png')
                 plt.savefig(plot_path)
                 plt.close()
+                
+                # Store plot path for MLflow logging
+                plot_paths[metric] = plot_path
+                
                 logger.info(f"Plot saved to {plot_path}")
+                logger.info(f"Metric: {metric} | Historical Mean: {historical_mean:.4f} | Recent Mean: {recent_mean:.4f} | Change: {percent_change:.2%} | Drift Detected: {'Yes' if is_drift else 'No'}")
+                
+                # Log the plot details for better tracking
+                file_size = os.path.getsize(plot_path)
+                logger.info(f"Plot file size: {file_size/1024:.2f} KB | Path: {plot_path}")
+                
+                # Log the metric to MLflow if run is active
+                if mlflow_run_id is not None:
+                    try:
+                        # Log metric values
+                        mlflow.log_metric(f"{metric}_recent_mean", recent_mean)
+                        mlflow.log_metric(f"{metric}_historical_mean", historical_mean)
+                        mlflow.log_metric(f"{metric}_percent_change", percent_change)
+                        mlflow.log_metric(f"{metric}_drift_detected", 1 if is_drift else 0)
+                        
+                        # Log the plot as an artifact
+                        mlflow.log_artifact(plot_path)
+                        logger.info(f"Logged {metric} metrics and plot to MLflow run {mlflow_run_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to log {metric} metrics to MLflow: {e}")
             
             # Determine overall drift status
             any_drift = any(result['drift_detected'] for result in drift_results.values())
@@ -413,6 +463,34 @@ with DAG(
             for metric, result in drift_results.items():
                 logger.info(f"  {metric}: Change of {result['percent_change']:.2%} (Drift: {'Yes' if result['drift_detected'] else 'No'})")
             
+            # Log summary report to MLflow if run is active
+            if mlflow_run_id is not None:
+                try:
+                    # Log overall drift status
+                    mlflow.log_metric("any_drift_detected", 1 if any_drift else 0)
+                    mlflow.log_param("model_name", REGISTERED_MODEL_NAME)
+                    mlflow.log_param("drift_threshold", DRIFT_THRESHOLD)
+                    mlflow.log_param("trend_window", TREND_WINDOW)
+                    mlflow.log_param("analysis_date", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    
+                    # Log the report as an artifact
+                    mlflow.log_artifact(report_path)
+                    
+                    # Add summary as a note to the run
+                    mlflow.set_tag("summary", f"Drift detected: {'Yes' if any_drift else 'No'}, Metrics analyzed: {len(drift_results)}")
+                    
+                    logger.info(f"Logged drift analysis summary to MLflow run {mlflow_run_id}")
+                    
+                    # End the MLflow run
+                    mlflow.end_run()
+                    logger.info(f"Ended MLflow run {mlflow_run_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to log summary to MLflow: {e}")
+                    try:
+                        mlflow.end_run()
+                    except:
+                        pass
+            
             # Convert numpy types to Python native types for XCom serialization
             serializable_results = {}
             for metric, values in drift_results.items():
@@ -434,6 +512,18 @@ with DAG(
             logger.error(f"❌ Error analyzing metrics for drift: {e}")
             import traceback
             logger.error(traceback.format_exc())
+            
+            # End the MLflow run if it was started
+            if mlflow_run_id is not None:
+                try:
+                    # Log the error to MLflow
+                    mlflow.set_tag("error", str(e))
+                    mlflow.log_param("error_traceback", traceback.format_exc())
+                    mlflow.end_run()
+                    logger.info(f"Ended MLflow run {mlflow_run_id} due to error")
+                except Exception as mlflow_e:
+                    logger.warning(f"Failed to properly end MLflow run: {mlflow_e}")
+            
             return {
                 'drift_detected': False,
                 'message': f"Error analyzing metrics: {str(e)}"
@@ -452,6 +542,23 @@ with DAG(
         
         if not drift_analysis['drift_detected']:
             logger.info("No drift detected, model performance appears stable")
+            # Log to MLflow in a new run
+            try:
+                if ml_flow_config['uri'] is not None:
+                    mlflow.set_tracking_uri(ml_flow_config['uri'])
+                    drift_experiment_name = f"{ml_flow_config['experiment_name']}_drift_monitoring" if ml_flow_config['experiment_name'] else "drift_monitoring"
+                    
+                    experiment = mlflow.get_experiment_by_name(drift_experiment_name)
+                    if experiment is not None:
+                        run_name = f"recommendations_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        with mlflow.start_run(experiment_id=experiment.experiment_id, run_name=run_name) as run:
+                            mlflow.log_param("status", "No drift detected")
+                            mlflow.log_param("model_name", REGISTERED_MODEL_NAME)
+                            mlflow.log_param("analysis_date", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                            mlflow.set_tag("recommendation", "No action needed - model performance is stable")
+                            logger.info(f"Logged 'no drift' status to MLflow run {run.info.run_id}")
+            except Exception as e:
+                logger.warning(f"Failed to log 'no drift' status to MLflow: {e}")
             return
         
         # Generate recommendations based on which metrics showed drift
@@ -506,6 +613,36 @@ with DAG(
         logger.info("Drift Analysis Recommendations:")
         for rec in recommendations:
             logger.info(f"  - {rec}")
+            
+        # Log recommendations to MLflow
+        try:
+            if ml_flow_config['uri'] is not None:
+                mlflow.set_tracking_uri(ml_flow_config['uri'])
+                drift_experiment_name = f"{ml_flow_config['experiment_name']}_drift_monitoring" if ml_flow_config['experiment_name'] else "drift_monitoring"
+                
+                experiment = mlflow.get_experiment_by_name(drift_experiment_name)
+                if experiment is not None:
+                    run_name = f"recommendations_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    with mlflow.start_run(experiment_id=experiment.experiment_id, run_name=run_name) as run:
+                        # Log parameters
+                        mlflow.log_param("status", "Drift detected")
+                        mlflow.log_param("model_name", REGISTERED_MODEL_NAME)
+                        mlflow.log_param("analysis_date", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                        mlflow.log_param("num_recommendations", len(recommendations))
+                        
+                        # Log recommendations as tags
+                        for i, rec in enumerate(recommendations, 1):
+                            mlflow.set_tag(f"recommendation_{i}", rec)
+                        
+                        # Log the recommendations file
+                        mlflow.log_artifact(recommendations_path)
+                        
+                        # Log a summary tag
+                        mlflow.set_tag("summary", f"Drift detected with {len(recommendations)} recommendations")
+                        
+                        logger.info(f"Logged recommendations to MLflow run {run.info.run_id}")
+        except Exception as e:
+            logger.warning(f"Failed to log recommendations to MLflow: {e}")
         
         return recommendations
 
