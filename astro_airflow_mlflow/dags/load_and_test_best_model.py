@@ -20,10 +20,7 @@ from src.utils.common import read_yaml, create_directories
 from src.components.model_trainer import ModelTrainer
 from src.config.configuration import ConfigurationManager
 from mlflow.models import infer_signature
-from mlflow import sklearn
 from sklearn.metrics import confusion_matrix, classification_report
-import joblib
-import pickle
 
 
 # Load environment variables from .env file
