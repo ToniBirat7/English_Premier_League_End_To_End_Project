@@ -27,7 +27,8 @@ class ConfigurationManager:
     return DataValidationConfig(
       root_dir=self.config.data_validation.root_dir,
       STATUS_FILE=self.config.data_validation.STATUS_FILE,
-      dataset_path=self.config.data_validation.dataset_location
+      dataset_path=self.config.data_validation.dataset_location,
+      raw_columns=dict(self.schema.raw_columns),
     )
   
   def get_data_transformation_config(self) -> DataTransformationConfig:

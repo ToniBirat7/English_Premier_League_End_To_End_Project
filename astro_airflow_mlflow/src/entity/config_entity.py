@@ -13,16 +13,16 @@ class DataIngestionConfig:
 class DataValidationConfig:
     """
     Data Validation Configuration
-    This class holds the configuration for data validation, including the root directory,
-    status file, and the schema for validation.
     Attributes:
-        root_dir (Path): The root directory where the data validation files are stored.
-        STATUS_FILE (str): The name of the status file used to track validation status.
-        all_schema (dict): A dictionary containing the schema for data validation.
+        root_dir: Where the data validation status file is written.
+        STATUS_FILE: yaml status file path.
+        dataset_path: Directory of CSVs to validate (post-ingestion).
+        raw_columns: {column_name: dtype_string} required in every input CSV.
     """
     root_dir: Path
     STATUS_FILE: Path
     dataset_path: Path
+    raw_columns: dict
 
 @dataclass
 class DataTransformationConfig:

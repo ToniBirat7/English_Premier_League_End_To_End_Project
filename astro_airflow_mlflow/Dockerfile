@@ -15,7 +15,8 @@ COPY src ./src
 COPY config ./config
 COPY params.yaml ./params.yaml
 COPY schema.yaml ./schema.yaml
-COPY .env ./.env
+# .env is intentionally NOT baked into the image; it is injected at runtime
+# by docker-compose.override.yml via env_file.
 
 # Create logs directory
 RUN mkdir -p logs

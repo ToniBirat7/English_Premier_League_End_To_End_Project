@@ -1,0 +1,116 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epl_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE:-epl_postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DATABASE:-epl_postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epl_net
+
+  mariadb:
+    image: mariadb:11
+    container_name: epl_mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${main_mariadb_container_password:-rootpassword}
+      MARIADB_DATABASE: ${cleaned_data_database_2:-cleaned_data_database_2}
+      MARIADB_USER: ${main_mariadb_container_user:-airflow}
+      MARIADB_PASSWORD: ${main_mariadb_container_password:-airflow}
+    ports:
+      - "${main_mariadb_container_port:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epl_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: epl_redis
+    ports:
+      - "${redis_container_port:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epl_net
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    container_name: epl_mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow_db/mlflow.db
+      --default-artifact-root /mlartifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_db:/mlflow_db
+      - mlflow_artifacts:/mlartifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epl_net
+
+  prediction_service:
+    build:
+      context: ./prediction_service
+    container_name: epl_prediction_service
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      REGISTERED_MODEL_NAME: ${REGISTERED_MODEL_NAME:-Best_XGBoost_Model}
+      MODEL_VERSION: ${MODEL_VERSION:-2}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-epl_postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "8001:8001"
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epl_net
+
+volumes:
+  postgres_data:
+  mariadb_data:
+  redis_data:
+  mlflow_db:
+  mlflow_artifacts:
+
+networks:
+  epl_net:
+    name: epl_net
+    driver: bridge

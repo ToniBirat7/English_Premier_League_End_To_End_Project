@@ -18,9 +18,9 @@ from src import src_logger as logger
 from src.constants import *
 from src.utils.common import read_yaml, create_directories
 from src.components.model_trainer import ModelTrainer
+from src.components.model_evaluation import ModelEvaluation
 from src.config.configuration import ConfigurationManager
 from mlflow.models import infer_signature
-from sklearn.metrics import confusion_matrix, classification_report
 
 
 # Load environment variables from .env file
@@ -169,34 +169,19 @@ with DAG(
         mlflow.log_param("train_data_path", config.train_data_path)
         mlflow.log_param("target_column", config.target_column)
 
-        # Make predictions on test data
-        y_test_pred = model.predict(X_test)
-        
-        # Find the F1 score of the best model
-        train_f1, train_accuracy = model_trainer.predict_labels(model, X_train, y_train_encoded)
-        test_f1, test_accuracy = model_trainer.predict_labels(model, X_test, y_test_encoded)
+        metrics = ModelEvaluation(config=config).evaluate(
+            model, X_train, y_train_encoded, X_test, y_test_encoded,
+        )
 
-        logger.info(f"Train F1 Score: {train_f1}, Train Accuracy: {train_accuracy}")
-        logger.info(f"Test F1 Score: {test_f1}, Test Accuracy: {test_accuracy}")
+        mlflow.log_metric("train_f1_score", metrics["train_f1"])
+        mlflow.log_metric("train_accuracy", metrics["train_accuracy"])
+        mlflow.log_metric("test_f1_score", metrics["test_f1"])
+        mlflow.log_metric("test_accuracy", metrics["test_accuracy"])
 
-        # Mlflow metrics logging
-        mlflow.log_metric("train_f1_score", float(train_f1))
-        mlflow.log_metric("train_accuracy", float(train_accuracy))
-        mlflow.log_metric("test_f1_score", float(test_f1))
-        mlflow.log_metric("test_accuracy", float(test_accuracy))
+        mlflow.log_text(metrics["confusion_matrix"], "confusion_matrix.txt")
+        mlflow.log_text(metrics["classification_report"], "classification_report.txt")
 
         logger.info("Model testing completed successfully")
-
-        # Generate confusion matrix and classification report
-        cm = confusion_matrix(y_test_encoded, y_test_pred)
-        cr = classification_report(y_test_encoded, y_test_pred)
-
-        logger.info(f"Confusion Matrix:\n{cm}")
-        logger.info(f"Classification Report:\n{cr}")
-
-        # Log confusion matrix and classification report to MLFlow
-        mlflow.log_text(str(cm), "confusion_matrix.txt")
-        mlflow.log_text(str(cr), "classification_report.txt")
 
         # Log the Model Signature
         mlflow.log_param("model_signature", str(signature))

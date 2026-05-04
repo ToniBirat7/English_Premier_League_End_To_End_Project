@@ -18,6 +18,8 @@ class DataValidationPipeline:
         data_validation = DataValidation(config=config.get_data_validation_config())
         is_valid = data_validation.validate_data()
         data_validation.save_validation_status(is_valid)
+        if not is_valid:
+            raise ValueError("Data validation failed; see logs for column / dtype mismatches.")
         return is_valid
 
 if __name__ == '__main__':

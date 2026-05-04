@@ -1,18 +1,59 @@
-# Schema for the project
+# Schema for EPL match-prediction project.
+#
+# raw_columns:
+#   Minimum columns required in every input CSV under the dataset path.
+#   data_transformation only consumes these (via get_stats_for_dataframe in
+#   src/utils/eda_functions/eda_methods.py) and re-derives everything else.
+#   Both per-season raw CSVs (2000-01.csv ... 2019-20.csv) and the merged
+#   final_dataset.csv satisfy this contract; extra columns are tolerated.
+#
+# model_columns:
+#   Feature matrix produced by data_transformation.transform_data ->
+#   preprocess_features (one-hot HM1-3 / AM1-3 over {W,D,L,M}, scaled
+#   numerics). This is the input contract for the trained XGBoost model
+#   loaded by the FastAPI prediction service.
+#
+# target_column:
+#   Full-Time Result. data_transformation binarises this via only_hw to
+#   {"H", "NH"} before training, but the raw input is "H" / "D" / "A".
 
-columns:
-  fixed acidity: float64
-  volatile acidity: float64
-  citric acid: float64
-  residual sugar: float64
-  chlorides: float64
-  free sulfur dioxide: float64
-  total sulfur dioxide: float64
-  density: float64
-  pH: float64
-  sulphates: float64
-  alcohol: float64
-  quality: int64
-  Id: int64
+raw_columns:
+  Date: object
+  HomeTeam: object
+  AwayTeam: object
+  FTHG: int64
+  FTAG: int64
+  FTR: object
 
-target_column: quality
+model_columns:
+  HTP: float64
+  ATP: float64
+  HTGD: float64
+  ATGD: float64
+  DiffFormPts: float64
+  HM1_D: bool
+  HM1_L: bool
+  HM1_M: bool
+  HM1_W: bool
+  HM2_D: bool
+  HM2_L: bool
+  HM2_M: bool
+  HM2_W: bool
+  HM3_D: bool
+  HM3_L: bool
+  HM3_M: bool
+  HM3_W: bool
+  AM1_D: bool
+  AM1_L: bool
+  AM1_M: bool
+  AM1_W: bool
+  AM2_D: bool
+  AM2_L: bool
+  AM2_M: bool
+  AM2_W: bool
+  AM3_D: bool
+  AM3_L: bool
+  AM3_M: bool
+  AM3_W: bool
+
+target_column: FTR
