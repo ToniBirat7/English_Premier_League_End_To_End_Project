@@ -6,9 +6,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from .models import Match, Team
 from .serializers import (
-    MatchSerializer, MatchDetailSerializer, 
+    MatchSerializer, MatchDetailSerializer,
     TeamSerializer, TeamStandingSerializer
 )
+from . import services
 
 
 class MatchFilter(django_filters.FilterSet):
@@ -199,39 +200,12 @@ class MatchViewSet(viewsets.ReadOnlyModelViewSet):
         
         try:
             match = Match.objects.get(id=match_id)
-            # Calculate some basic match statistics
+            prediction = services.predict_match(
+                match.home_team, match.away_team, match.season, match.matchweek
+            )
             match_stats = {
                 'match': MatchDetailSerializer(match).data,
-                'statistics': {
-                    'possession': {
-                        'home': 55,  # Mock data - can be enhanced with real data
-                        'away': 45
-                    },
-                    'shots': {
-                        'home': match.fthg * 3 + 2,  # Mock calculation
-                        'away': match.ftag * 3 + 2
-                    },
-                    'shots_on_target': {
-                        'home': match.fthg + 1,
-                        'away': match.ftag + 1
-                    },
-                    'corners': {
-                        'home': match.fthg * 2 + 3,
-                        'away': match.ftag * 2 + 3
-                    },
-                    'fouls': {
-                        'home': 12,
-                        'away': 14
-                    },
-                    'yellow_cards': {
-                        'home': 2,
-                        'away': 3
-                    },
-                    'red_cards': {
-                        'home': 0,
-                        'away': 0
-                    }
-                }
+                'prediction': prediction,
             }
             return Response(match_stats)
         except Match.DoesNotExist:

@@ -21,12 +21,22 @@ The project is designed to run entirely on containerized local infrastructure, e
   - `dags/`: Airflow Directed Acyclic Graphs.
   - `src/`: Custom Python packages for ETL and Model training.
   - `include/`: SQL and additional scripts.
+  - `schema.yaml`: Single source of truth for column contracts (raw, model, target).
+  - `docker-compose.override.yml`: Airflow service network configuration.
+- `prediction_service/`: FastAPI microservice for match outcome prediction.
+  - `app/main.py`: FastAPI app with lifespan, /health and /predict endpoints.
+  - `app/featurizer.py`: Feature engineering and Postgres queries.
+  - `app/schemas.py`: Pydantic models.
+  - `app/config.py`: Environment-driven configuration.
+  - `tests/`: Unit tests with monkeypatched model.
 - `Full_Stack_WebApp/`: Production web interface.
-  - `Backend/`: Django REST API.
+  - `Backend/`: Django REST API with FastAPI prediction integration.
+    - `football_api/services.py`: Service layer for calling FastAPI with retries.
   - `frontend/`: Next.js UI.
 - `Datasets/`: DVC-tracked CSV files (Match history from 2000-2020+).
 - `Scrapping_Scripts/`: Postgres-based scraping utilities.
-- `Docker_Learning_Project/`: Side-project/Reference for multi-container setup.
+- `docker-compose.yml`: Root-level orchestration for all services (postgres, mariadb, redis, mlflow, prediction_service).
+- `.env.example`: Environment variable template.
 
 ## Getting started
 1. **Initialize Astro**: `cd astro_airflow_mlflow && astro dev start`
@@ -38,11 +48,15 @@ The project is designed to run entirely on containerized local infrastructure, e
 ## Environment variables
 | Variable | Description | Example |
 |----------|-------------|---------|
+| `POSTGRES_HOST` | PostgreSQL service hostname | `postgres` (compose) / `localhost` (host shell) |
+| `POSTGRES_PORT` | PostgreSQL port | `5434` |
+| `POSTGRES_DATABASE` | PostgreSQL database name | `epl_postgres` |
 | `main_mariadb_container_host` | MariaDB service hostname | `mariadb` (compose) / `localhost` (host shell) |
 | `main_mariadb_container_user` | MariaDB username | `root` |
 | `main_mariadb_container_password` | MariaDB password | `your_password` |
-| `MLFLOW_TRACKING_URI` | MLflow server URL | `http://localhost:5000` |
-| `REDIS_HOST` | Redis container host | `localhost` |
+| `MLFLOW_TRACKING_URI` | MLflow server URL | `http://mlflow:5000` (compose) / `http://localhost:5000` (host shell) |
+| `REDIS_HOST` | Redis container host | `redis` (compose) / `localhost` (host shell) |
+| `PREDICTION_SERVICE_URL` | FastAPI prediction service URL | `http://prediction_service:8001` (compose) / `http://localhost:8001` (host shell) |
 
 ## Architecture overview
 1. **Scraping**: `web_scraper.py` fetches data -> PostgreSQL (`epl_scrapped`).

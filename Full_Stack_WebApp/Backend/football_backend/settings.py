@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -156,3 +157,6 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Allow all hosts for development
 ALLOWED_HOSTS = ['*']
+
+# Prediction Service Configuration
+PREDICTION_SERVICE_URL = os.getenv("PREDICTION_SERVICE_URL", "http://prediction_service:8001")
